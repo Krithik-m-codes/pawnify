@@ -16,8 +16,11 @@ import {
   X,
   Scale,
   Sparkles,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { useTheme } from "@/components/theme-provider";
 
 interface SidebarProps {
   user: {
@@ -41,6 +44,8 @@ interface NavContentProps {
   setMobileOpen: (open: boolean) => void;
   handleLogout: () => void;
   loggingOut: boolean;
+  theme: "light" | "dark";
+  toggleTheme: () => void;
 }
 
 function NavContent({
@@ -51,6 +56,8 @@ function NavContent({
   setMobileOpen,
   handleLogout,
   loggingOut,
+  theme,
+  toggleTheme,
 }: NavContentProps) {
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -58,28 +65,39 @@ function NavContent({
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950/90 border-r border-zinc-800/80 p-4 select-none">
+    <div
+      className="flex flex-col h-full p-4 select-none"
+      style={{
+        background: "var(--bg-sidebar)",
+        borderRight: "1px solid var(--border-primary)",
+      }}
+    >
       {/* Brand */}
-      <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-zinc-800/80">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-zinc-950 shadow-lg shadow-amber-500/20">
-          <Scale className="w-6 h-6 stroke-[2.5]" />
-        </div>
-        <div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent">
-              Pawnify
-            </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
-              IN
-            </span>
-          </div>
-          <p className="text-[11px] text-zinc-400">Gold & Silver Loans</p>
-        </div>
+      <div className="flex items-center justify-between px-3 py-4 mb-4" style={{ borderBottom: "1px solid var(--border-primary)" }}>
+        <Link href="/dashboard" className="flex items-center gap-2.5 group cursor-pointer">
+          <img src="/icon.png" alt="Pawnify Icon" className="w-8 h-8 object-contain transition-transform duration-300 group-hover:scale-110" />
+          <span className="font-extrabold text-lg tracking-tight text-zinc-900 dark:text-white transition-colors font-sans">
+            PAWNIFY
+          </span>
+        </Link>
+        <span
+          className="text-[10px] px-1.5 py-0.5 rounded font-bold tracking-wider"
+          style={{
+            background: "var(--accent-bg)",
+            color: "var(--accent-text)",
+            border: "1px solid var(--accent-border)",
+          }}
+        >
+          IN
+        </span>
       </div>
 
       {/* Main Nav */}
       <div className="space-y-1 flex-1 overflow-y-auto pr-1">
-        <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+        <div
+          className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider"
+          style={{ color: "var(--text-muted)" }}
+        >
           Overview & Management
         </div>
         {navItems.map((item) => {
@@ -90,17 +108,20 @@ function NavContent({
               key={item.href}
               href={item.href}
               onClick={() => setMobileOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-200"
+              style={
                 active
-                  ? "bg-gradient-to-r from-amber-500/20 to-amber-500/5 text-amber-400 border-l-2 border-amber-500 shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/80"
-              }`}
+                  ? {
+                    background: "var(--accent-bg)",
+                    color: "var(--accent-text)",
+                    borderLeft: "3px solid var(--accent)",
+                  }
+                  : { color: "var(--text-tertiary)" }
+              }
             >
-              <Icon
-                className={`w-4 h-4 shrink-0 transition-colors ${
-                  active ? "text-amber-400" : "text-zinc-500"
-                }`}
-              />
+              <span style={{ color: active ? "var(--accent-text)" : "var(--text-muted)" }}>
+                <Icon className="w-4 h-4 shrink-0 transition-colors" />
+              </span>
               {item.label}
             </Link>
           );
@@ -109,8 +130,11 @@ function NavContent({
         {/* Admin Section */}
         {user.role === "ADMIN" && (
           <>
-            <div className="px-3 pt-6 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-amber-400" />
+            <div
+              className="px-3 pt-6 pb-1.5 text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <span style={{ color: "var(--accent)" }}><Sparkles className="w-3 h-3" /></span>
               Admin Controls
             </div>
             {adminItems.map((item) => {
@@ -121,17 +145,20 @@ function NavContent({
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-200"
+                  style={
                     active
-                      ? "bg-gradient-to-r from-amber-500/20 to-amber-500/5 text-amber-400 border-l-2 border-amber-500 shadow-sm"
-                      : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/80"
-                  }`}
+                      ? {
+                        background: "var(--accent-bg)",
+                        color: "var(--accent-text)",
+                        borderLeft: "3px solid var(--accent)",
+                      }
+                      : { color: "var(--text-tertiary)" }
+                  }
                 >
-                  <Icon
-                    className={`w-4 h-4 shrink-0 transition-colors ${
-                      active ? "text-amber-400" : "text-zinc-500"
-                    }`}
-                  />
+                  <span style={{ color: active ? "var(--accent-text)" : "var(--text-muted)" }}>
+                    <Icon className="w-4 h-4 shrink-0 transition-colors" />
+                  </span>
                   {item.label}
                 </Link>
               );
@@ -140,25 +167,71 @@ function NavContent({
         )}
       </div>
 
+      {/* Theme Toggle */}
+      <div className="pt-3 mb-3" style={{ borderTop: "1px solid var(--border-primary)" }}>
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer"
+          style={{
+            background: "var(--bg-tertiary)",
+            color: "var(--text-secondary)",
+            border: "1px solid var(--border-primary)",
+          }}
+        >
+          <span className="flex items-center gap-2">
+            {theme === "light" ? (
+              <Sun className="w-4 h-4" style={{ color: "#f59e0b" }} />
+            ) : (
+              <Moon className="w-4 h-4" style={{ color: "#818cf8" }} />
+            )}
+            {theme === "light" ? "Light Mode" : "Dark Mode"}
+          </span>
+          <span
+            className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"
+            style={{
+              background: "var(--accent-bg)",
+              color: "var(--accent-text)",
+            }}
+          >
+            {theme === "light" ? "☀" : "🌙"}
+          </span>
+        </button>
+      </div>
+
       {/* User Profile Footer */}
-      <div className="pt-4 border-t border-zinc-800/80 mt-auto">
-        <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-between gap-3">
+      <div>
+        <div
+          className="p-3 rounded-xl flex items-center justify-between gap-3"
+          style={{
+            background: "var(--bg-tertiary)",
+            border: "1px solid var(--border-primary)",
+          }}
+        >
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm text-zinc-200 truncate">
+              <span className="font-semibold text-sm truncate" style={{ color: "var(--text-primary)" }}>
                 {user.name}
               </span>
               <span
-                className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase ${
+                className="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase"
+                style={
                   user.role === "ADMIN"
-                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                    : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                }`}
+                    ? {
+                      background: "var(--accent-bg)",
+                      color: "var(--accent-text)",
+                      border: "1px solid var(--accent-border)",
+                    }
+                    : {
+                      background: "rgba(59, 130, 246, 0.1)",
+                      color: "#3b82f6",
+                      border: "1px solid rgba(59, 130, 246, 0.25)",
+                    }
+                }
               >
                 {user.role}
               </span>
             </div>
-            <p className="text-xs text-zinc-500 truncate mt-0.5">
+            <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-muted)" }}>
               {user.email}
             </p>
           </div>
@@ -166,7 +239,8 @@ function NavContent({
             onClick={handleLogout}
             disabled={loggingOut}
             title="Sign out"
-            className="p-2 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
+            className="p-2 rounded-lg transition-colors shrink-0 disabled:opacity-50 cursor-pointer hover:bg-red-500/10"
+            style={{ color: "var(--text-muted)" }}
           >
             <LogOut className="w-4 h-4" />
           </button>
@@ -179,6 +253,7 @@ function NavContent({
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -213,7 +288,12 @@ export function Sidebar({ user }: SidebarProps) {
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-200 shadow-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+          className="p-2.5 rounded-xl shadow-lg transition-colors cursor-pointer"
+          style={{
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-primary)",
+            color: "var(--text-primary)",
+          }}
           aria-label="Toggle Navigation"
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -223,16 +303,16 @@ export function Sidebar({ user }: SidebarProps) {
       {/* Mobile Overlay */}
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fadeIn"
+          className="lg:hidden fixed inset-0 z-40 animate-fadeIn"
+          style={{ background: "var(--bg-overlay)" }}
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Mobile Sidebar */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 bottom-0 w-72 z-50 transition-transform duration-300 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`lg:hidden fixed top-0 left-0 bottom-0 w-72 z-50 transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <NavContent
           user={user}
@@ -242,6 +322,8 @@ export function Sidebar({ user }: SidebarProps) {
           setMobileOpen={setMobileOpen}
           handleLogout={handleLogout}
           loggingOut={loggingOut}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
       </aside>
       {/* Desktop Sidebar */}
@@ -254,6 +336,8 @@ export function Sidebar({ user }: SidebarProps) {
           setMobileOpen={setMobileOpen}
           handleLogout={handleLogout}
           loggingOut={loggingOut}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
       </aside>
     </>

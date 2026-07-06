@@ -221,13 +221,13 @@ export async function getDashboardChartData() {
 
   return {
     metalBreakdown: [
-      { name: "Gold Loans", count: goldCount, value: Number(goldValue), fill: "#FACC15" },
-      { name: "Silver Loans", count: silverCount, value: Number(silverValue), fill: "#94A3B8" },
+      { name: "Gold Loans", count: goldCount, value: Number(goldValue), fill: "#16a34a" },
+      { name: "Silver Loans", count: silverCount, value: Number(silverValue), fill: "#86efac" },
     ],
     statusBreakdown: [
-      { name: "Active", count: activeCnt, value: Number(activeVal), fill: "#10B981" },
-      { name: "Overdue", count: overdueCnt, value: Number(overdueVal), fill: "#F43F5E" },
-      { name: "Closed", count: closedCnt, value: Number(closedVal), fill: "#64748B" },
+      { name: "Active", count: activeCnt, value: Number(activeVal), fill: "#22c55e" },
+      { name: "Overdue", count: overdueCnt, value: Number(overdueVal), fill: "#f43f5e" },
+      { name: "Closed", count: closedCnt, value: Number(closedVal), fill: "#94a3b8" },
     ],
     monthlyTrend: Object.values(monthlyData),
   };

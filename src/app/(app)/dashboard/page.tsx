@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   TrendingUp,
   Users,
-  ArrowUpRight,
   Plus,
   Clock,
   CheckCircle2,
@@ -58,7 +57,7 @@ export default async function DashboardPage() {
             </Link>
             <Link
               href="/loans/new"
-              className="btn-primary text-xs px-3.5 py-2 shadow-md shadow-amber-500/10"
+              className="btn-primary text-xs px-3.5 py-2"
             >
               <Plus className="w-3.5 h-3.5" />
               New Loan Disbursal
@@ -72,37 +71,38 @@ export default async function DashboardPage() {
         {/* AUM */}
         <div className="kpi-card relative overflow-hidden group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
               Total Active AUM
             </span>
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"
+              style={{ background: "var(--accent-bg)", color: "var(--accent-text)" }}>
               <Coins className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-100">
+          <div className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
             {formatINR(stats.totalAUM)}
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-zinc-400">
-            <span className="text-amber-400 font-medium">{stats.activeCount}</span>
+          <div className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+            <span className="font-medium" style={{ color: "var(--accent-text)" }}>{stats.activeCount}</span>
             <span>active loan contracts</span>
           </div>
         </div>
 
         {/* Overdue */}
-        <div className="kpi-card relative overflow-hidden group border-red-500/20 hover:border-red-500/40">
+        <div className="kpi-card relative overflow-hidden group" style={{ borderColor: "rgba(239, 68, 68, 0.2)" }}>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-red-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-red-500">
               Overdue Exposure
             </span>
-            <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
               <AlertTriangle className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold tracking-tight text-red-400">
+          <div className="text-2xl sm:text-3xl font-bold tracking-tight text-red-500">
             {formatINR(stats.overdueAmount)}
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-zinc-400">
-            <span className="text-red-400 font-bold">{stats.overdueCount}</span>
+          <div className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+            <span className="text-red-500 font-bold">{stats.overdueCount}</span>
             <span>loans past grace period</span>
           </div>
         </div>
@@ -110,18 +110,18 @@ export default async function DashboardPage() {
         {/* Collections Today */}
         <div className="kpi-card relative overflow-hidden group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
               Collections Today
             </span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
               <TrendingUp className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-400">
+          <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600">
             {formatINR(stats.collectionsToday.amount)}
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-zinc-400">
-            <span className="text-emerald-400 font-medium">
+          <div className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+            <span className="text-emerald-600 font-medium">
               {stats.collectionsToday.count}
             </span>
             <span>receipts issued today</span>
@@ -131,18 +131,18 @@ export default async function DashboardPage() {
         {/* Customers */}
         <div className="kpi-card relative overflow-hidden group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
               Total Customers
             </span>
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
               <Users className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-100">
+          <div className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
             {stats.customerCount}
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-zinc-400">
-            <span className="text-zinc-300 font-medium">{stats.closedCount}</span>
+          <div className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+            <span className="font-medium" style={{ color: "var(--text-secondary)" }}>{stats.closedCount}</span>
             <span>historical closed loans</span>
           </div>
         </div>
@@ -154,43 +154,46 @@ export default async function DashboardPage() {
       {/* Secondary Metrics & Quick Status */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="glass-card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "var(--accent-bg)", color: "var(--accent-text)" }}>
             <Wallet className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-xs font-medium text-zinc-400">Disbursed Today</div>
-            <div className="text-lg font-bold text-zinc-100">
+            <div className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Disbursed Today</div>
+            <div className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
               {formatINR(stats.disbursedToday.amount)}
             </div>
-            <div className="text-[11px] text-zinc-500">
+            <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
               {stats.disbursedToday.count} loan(s)
             </div>
           </div>
         </div>
 
         <div className="glass-card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "rgba(245, 158, 11, 0.1)", color: "#d97706" }}>
             <Clock className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-xs font-medium text-zinc-400">Due in 7 Days</div>
-            <div className="text-lg font-bold text-zinc-100">
+            <div className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Due in 7 Days</div>
+            <div className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
               {stats.dueIn7Days} loans
             </div>
-            <div className="text-[11px] text-zinc-500">Immediate follow-up target</div>
+            <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>Immediate follow-up target</div>
           </div>
         </div>
 
         <div className="glass-card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "rgba(59, 130, 246, 0.1)", color: "#2563eb" }}>
             <Calendar className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-xs font-medium text-zinc-400">Due in 30 Days</div>
-            <div className="text-lg font-bold text-zinc-100">
+            <div className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Due in 30 Days</div>
+            <div className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
               {stats.dueIn30Days} loans
             </div>
-            <div className="text-[11px] text-zinc-500">Upcoming maturity window</div>
+            <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>Upcoming maturity window</div>
           </div>
         </div>
       </div>
@@ -202,13 +205,14 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-              <h2 className="text-base font-semibold text-zinc-100">
+              <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
                 Action Required: Overdue Accounts
               </h2>
             </div>
             <Link
               href="/loans?status=OVERDUE"
-              className="text-xs font-medium text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+              className="text-xs font-medium flex items-center gap-1 transition-colors"
+              style={{ color: "var(--accent-text)" }}
             >
               View all ({stats.overdueCount})
               <ArrowRight className="w-3.5 h-3.5" />
@@ -217,7 +221,7 @@ export default async function DashboardPage() {
 
           <div className="glass-card overflow-hidden">
             {stats.overdueLoans.length === 0 ? (
-              <div className="p-8 text-center text-sm text-zinc-500 flex flex-col items-center gap-2">
+              <div className="p-8 text-center text-sm flex flex-col items-center gap-2" style={{ color: "var(--text-muted)" }}>
                 <CheckCircle2 className="w-8 h-8 text-emerald-500/50" />
                 <span>No overdue loans currently! All accounts are in good standing.</span>
               </div>
@@ -236,7 +240,7 @@ export default async function DashboardPage() {
                   <tbody>
                     {stats.overdueLoans.map((loan) => (
                       <tr key={loan.id}>
-                        <td className="font-mono text-xs font-medium text-amber-400">
+                        <td className="font-mono text-xs font-medium" style={{ color: "var(--accent-text)" }}>
                           <Link
                             href={`/loans/${loan.id}`}
                             className="hover:underline"
@@ -245,19 +249,19 @@ export default async function DashboardPage() {
                           </Link>
                         </td>
                         <td>
-                          <div className="font-medium text-zinc-200">
+                          <div className="font-medium" style={{ color: "var(--text-primary)" }}>
                             {loan.customer.fullName}
                           </div>
-                          <div className="text-xs text-zinc-500 font-mono">
+                          <div className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
                             {loan.customer.phone}
                           </div>
                         </td>
-                        <td className="font-semibold text-red-400">
+                        <td className="font-semibold text-red-500">
                           {formatINR(loan.principalOutstanding.toString())}
                         </td>
-                        <td className="text-xs text-zinc-400">
+                        <td className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                           {formatDate(loan.dueDate)}
-                          <div className="text-[10px] text-red-400 font-medium">
+                          <div className="text-[10px] text-red-500 font-medium">
                             +{loan.gracePeriodDays}d grace passed
                           </div>
                         </td>
@@ -281,27 +285,31 @@ export default async function DashboardPage() {
         {/* Right 1 Col: Recent Disbursals */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-zinc-100">
+            <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
               Recent Disbursals
             </h2>
             <Link
               href="/loans"
-              className="text-xs font-medium text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+              className="text-xs font-medium flex items-center gap-1 transition-colors"
+              style={{ color: "var(--accent-text)" }}
             >
               All Loans
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="glass-card divide-y divide-zinc-800/80">
-            {stats.recentLoans.map((loan) => (
+          <div className="glass-card overflow-hidden" style={{ borderColor: "var(--border-card)" }}>
+            {stats.recentLoans.map((loan, i) => (
               <Link
                 key={loan.id}
                 href={`/loans/${loan.id}`}
-                className="block p-4 hover:bg-zinc-900/60 transition-colors"
+                className="block p-4 transition-colors"
+                style={{
+                  borderBottom: i < stats.recentLoans.length - 1 ? "1px solid var(--border-secondary)" : "none",
+                }}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-mono text-xs font-medium text-amber-400">
+                  <span className="font-mono text-xs font-medium" style={{ color: "var(--accent-text)" }}>
                     {loan.loanNumber}
                   </span>
                   <span
@@ -316,12 +324,12 @@ export default async function DashboardPage() {
                     {loan.displayStatus}
                   </span>
                 </div>
-                <div className="font-medium text-sm text-zinc-200 truncate">
+                <div className="font-medium text-sm truncate" style={{ color: "var(--text-primary)" }}>
                   {loan.customer.fullName}
                 </div>
-                <div className="flex items-center justify-between mt-2 text-xs text-zinc-400">
+                <div className="flex items-center justify-between mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
                   <span>Disbursed: {formatDate(loan.loanDate)}</span>
-                  <span className="font-bold text-zinc-100">
+                  <span className="font-bold" style={{ color: "var(--text-primary)" }}>
                     {formatINR(loan.principalAmount.toString())}
                   </span>
                 </div>

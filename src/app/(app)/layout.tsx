@@ -15,10 +15,10 @@ export default async function AppLayout({
   };
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="flex min-h-screen" style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}>
       <Sidebar user={user} />
-      <main className="flex-1 min-w-0 overflow-x-hidden">
-        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pt-16 lg:pt-8 animate-fadeIn">
+      <main className="flex-1 min-w-0 overflow-x-hidden flex flex-col">
+        <div className="w-full flex-1 p-4 sm:p-6 lg:p-8 pt-16 lg:pt-8 animate-fadeIn">
           {children}
         </div>
       </main>

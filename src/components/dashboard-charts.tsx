@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { motion } from "framer-motion";
 import { Coins, ShieldAlert, Sparkles, PieChart as PieIcon, BarChart3 } from "lucide-react";
+import { useTheme } from "@/components/theme-provider";
 
 interface DashboardChartsProps {
   data: {
@@ -50,15 +51,22 @@ const formatINR = (val: number) => {
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#10121D]/95 backdrop-blur-xl border border-white/15 p-3 rounded-xl shadow-2xl text-xs space-y-1.5 min-w-[160px]">
-        <p className="font-bold text-zinc-200 border-b border-white/10 pb-1 mb-1">{label}</p>
+      <div
+        className="p-3 rounded-xl shadow-xl text-xs space-y-1.5 min-w-[160px] backdrop-blur-xl"
+        style={{
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-primary)",
+          boxShadow: "var(--shadow-lg)",
+        }}
+      >
+        <p className="font-bold pb-1 mb-1" style={{ color: "var(--text-primary)", borderBottom: "1px solid var(--border-secondary)" }}>{label}</p>
         {payload.map((entry, index) => (
           <div key={index} className="flex items-center justify-between gap-3">
-            <span className="flex items-center gap-1.5 font-medium text-zinc-400">
+            <span className="flex items-center gap-1.5 font-medium" style={{ color: "var(--text-tertiary)" }}>
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
               {entry.name}:
             </span>
-            <span className="font-bold text-zinc-100">
+            <span className="font-bold" style={{ color: "var(--text-primary)" }}>
               {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(entry.value)}
             </span>
           </div>
@@ -73,16 +81,25 @@ const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const entry = payload[0];
     return (
-      <div className="bg-[#10121D]/95 backdrop-blur-xl border border-white/15 p-3 rounded-xl shadow-2xl text-xs space-y-1 min-w-[140px]">
-        <div className="flex items-center gap-2 font-bold text-zinc-200">
+      <div
+        className="p-3 rounded-xl shadow-xl text-xs space-y-1 min-w-[140px] backdrop-blur-xl"
+        style={{
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-primary)",
+          boxShadow: "var(--shadow-lg)",
+        }}
+      >
+        <div className="flex items-center gap-2 font-bold" style={{ color: "var(--text-primary)" }}>
           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.payload.fill || entry.fill }} />
           {entry.name}
         </div>
-        <p className="text-zinc-400">
-          Valuation: <span className="font-bold text-amber-400">{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(entry.value)}</span>
+        <p style={{ color: "var(--text-tertiary)" }}>
+          Valuation: <span className="font-bold" style={{ color: "var(--accent-text)" }}>
+            {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(entry.value)}
+          </span>
         </p>
-        <p className="text-zinc-400">
-          Accounts: <span className="font-bold text-zinc-100">{entry.payload.count} loans</span>
+        <p style={{ color: "var(--text-tertiary)" }}>
+          Accounts: <span className="font-bold" style={{ color: "var(--text-primary)" }}>{entry.payload.count} loans</span>
         </p>
       </div>
     );
@@ -92,48 +109,57 @@ const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
 
 export function DashboardCharts({ data }: DashboardChartsProps) {
   const [activeTab, setActiveTab] = useState<"trend" | "portfolio">("trend");
+  const { theme } = useTheme();
+
+  const axisColor = theme === "light" ? "#94a3b8" : "#64748b";
+  const strokeLight = theme === "light" ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.1)";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="glass-card p-6 mb-8 border border-white/10"
+      className="glass-card p-6 mb-8"
     >
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-white/10">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4"
+        style={{ borderBottom: "1px solid var(--border-primary)" }}>
         <div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: "var(--accent-bg)", color: "var(--accent-text)" }}>
               <Sparkles className="w-4 h-4" />
             </div>
-            <h3 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            <h3 className="text-lg font-bold tracking-tight flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
               Portfolio Analytics & Trends
             </h3>
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
             Visualizing disbursement volume, collection velocity, and metal collateral valuation.
           </p>
         </div>
 
-        <div className="flex items-center bg-[#10121D] p-1 rounded-xl border border-white/10">
+        <div className="flex items-center p-1 rounded-xl"
+          style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}>
           <button
             onClick={() => setActiveTab("trend")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+            style={
               activeTab === "trend"
-                ? "bg-gradient-to-r from-amber-500/20 to-amber-500/10 text-amber-400 border border-amber-500/30 shadow-sm"
-                : "text-zinc-400 hover:text-zinc-200"
-            }`}
+                ? { background: "var(--bg-card)", color: "var(--accent-text)", boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-primary)" }
+                : { color: "var(--text-muted)", border: "1px solid transparent" }
+            }
           >
             <BarChart3 className="w-3.5 h-3.5" />
             Cashflow Trends
           </button>
           <button
             onClick={() => setActiveTab("portfolio")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+            style={
               activeTab === "portfolio"
-                ? "bg-gradient-to-r from-amber-500/20 to-amber-500/10 text-amber-400 border border-amber-500/30 shadow-sm"
-                : "text-zinc-400 hover:text-zinc-200"
-            }`}
+                ? { background: "var(--bg-card)", color: "var(--accent-text)", boxShadow: "var(--shadow-sm)", border: "1px solid var(--border-primary)" }
+                : { color: "var(--text-muted)", border: "1px solid transparent" }
+            }
           >
             <PieIcon className="w-3.5 h-3.5" />
             Collateral & Status
@@ -143,12 +169,12 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
 
       {activeTab === "trend" ? (
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-zinc-400 px-2">
+          <div className="flex items-center justify-between text-xs px-2" style={{ color: "var(--text-muted)" }}>
             <span className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded bg-amber-500 inline-block" /> Disbursed Principal
+              <span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#16a34a" }} /> Disbursed Principal
             </span>
             <span className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded bg-emerald-500 inline-block" /> Collected Payments
+              <span className="w-3 h-3 rounded inline-block" style={{ backgroundColor: "#4ade80" }} /> Collected Payments
             </span>
           </div>
           <div className="h-[300px] w-full pt-2">
@@ -156,19 +182,19 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
               <AreaChart data={data.monthlyTrend} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorDisbursed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FACC15" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#FACC15" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#16a34a" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorCollected" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#4ade80" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#4ade80" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="month" stroke="#6E789F" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#6E789F" fontSize={11} tickFormatter={formatINR} tickLine={false} axisLine={false} />
+                <XAxis dataKey="month" stroke={axisColor} fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke={axisColor} fontSize={11} tickFormatter={formatINR} tickLine={false} axisLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="disbursed" name="Disbursed" stroke="#FACC15" strokeWidth={2.5} fillOpacity={1} fill="url(#colorDisbursed)" />
-                <Area type="monotone" dataKey="collected" name="Collected" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorCollected)" />
+                <Area type="monotone" dataKey="disbursed" name="Disbursed" stroke="#16a34a" strokeWidth={2.5} fillOpacity={1} fill="url(#colorDisbursed)" />
+                <Area type="monotone" dataKey="collected" name="Collected" stroke="#4ade80" strokeWidth={2.5} fillOpacity={1} fill="url(#colorCollected)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -176,25 +202,19 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
           {/* Metal Breakdown */}
-          <div className="bg-[#10121D]/60 p-4 rounded-xl border border-white/5 flex flex-col items-center">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2 self-start flex items-center gap-1.5">
-              <Coins className="w-3.5 h-3.5 text-amber-400" />
+          <div className="p-4 rounded-xl flex flex-col items-center"
+            style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-secondary)" }}>
+            <h4 className="text-xs font-bold uppercase tracking-wider mb-2 self-start flex items-center gap-1.5"
+              style={{ color: "var(--text-muted)" }}>
+              <Coins className="w-3.5 h-3.5" style={{ color: "var(--accent-text)" }} />
               Collateral Value by Metal Type
             </h4>
             <div className="h-[220px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={data.metalBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
+                  <Pie data={data.metalBreakdown} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={5} dataKey="value">
                     {data.metalBreakdown.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+                      <Cell key={`cell-${index}`} fill={entry.fill} stroke={strokeLight} strokeWidth={1} />
                     ))}
                   </Pie>
                   <Tooltip content={<CustomPieTooltip />} />
@@ -205,33 +225,27 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
               {data.metalBreakdown.map((m) => (
                 <div key={m.name} className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full" style={{ backgroundColor: m.fill }} />
-                  <span className="text-zinc-300 font-medium">{m.name}:</span>
-                  <span className="font-bold text-white">{m.count} ({formatINR(m.value)})</span>
+                  <span className="font-medium" style={{ color: "var(--text-secondary)" }}>{m.name}:</span>
+                  <span className="font-bold" style={{ color: "var(--text-primary)" }}>{m.count} ({formatINR(m.value)})</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Status Breakdown */}
-          <div className="bg-[#10121D]/60 p-4 rounded-xl border border-white/5 flex flex-col items-center">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2 self-start flex items-center gap-1.5">
-              <ShieldAlert className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="p-4 rounded-xl flex flex-col items-center"
+            style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-secondary)" }}>
+            <h4 className="text-xs font-bold uppercase tracking-wider mb-2 self-start flex items-center gap-1.5"
+              style={{ color: "var(--text-muted)" }}>
+              <ShieldAlert className="w-3.5 h-3.5 text-emerald-500" />
               Loan Account Status Distribution
             </h4>
             <div className="h-[220px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={data.statusBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
+                  <Pie data={data.statusBreakdown} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={5} dataKey="value">
                     {data.statusBreakdown.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+                      <Cell key={`cell-${index}`} fill={entry.fill} stroke={strokeLight} strokeWidth={1} />
                     ))}
                   </Pie>
                   <Tooltip content={<CustomPieTooltip />} />
@@ -242,8 +256,8 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
               {data.statusBreakdown.map((s) => (
                 <div key={s.name} className="flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-full" style={{ backgroundColor: s.fill }} />
-                  <span className="text-zinc-300 font-medium">{s.name}:</span>
-                  <span className="font-bold text-white">{s.count}</span>
+                  <span className="font-medium" style={{ color: "var(--text-secondary)" }}>{s.name}:</span>
+                  <span className="font-bold" style={{ color: "var(--text-primary)" }}>{s.count}</span>
                 </div>
               ))}
             </div>
