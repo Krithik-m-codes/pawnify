@@ -1,0 +1,84 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { checkAuth } from "@/lib/auth/session";
+import { recordPayment } from "@/lib/services/payments";
+import { closeLoan, releaseItems } from "@/lib/services/loans";
+import { paymentSchema } from "@/lib/validation/payment";
+
+export async function recordPaymentAction(formData: unknown) {
+  const auth = await checkAuth();
+  if (!auth.authenticated || !auth.user) {
+    return { success: false, error: "Unauthorized. Please sign in." };
+  }
+
+  const parsed = paymentSchema.safeParse(formData);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message || "Invalid payment data",
+    };
+  }
+
+  try {
+    const pmt = await recordPayment(
+      parsed.data.loanId,
+      parsed.data.amountPaid,
+      parsed.data.mode,
+      auth.user.id,
+      parsed.data.notes
+    );
+
+    revalidatePath(`/loans/${parsed.data.loanId}`);
+    revalidatePath("/loans");
+    revalidatePath("/dashboard");
+    return { success: true, receiptNumber: pmt.receiptNumber };
+  } catch (err: unknown) {
+    console.error("Payment recording error:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to record payment",
+    };
+  }
+}
+
+export async function closeLoanAction(loanId: string) {
+  const auth = await checkAuth();
+  if (!auth.authenticated || !auth.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    await closeLoan(loanId, auth.user.id);
+    revalidatePath(`/loans/${loanId}`);
+    revalidatePath("/loans");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (err: unknown) {
+    console.error("Close loan error:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to close loan",
+    };
+  }
+}
+
+export async function releaseItemsAction(loanId: string) {
+  const auth = await checkAuth();
+  if (!auth.authenticated || !auth.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    await releaseItems(loanId);
+    revalidatePath(`/loans/${loanId}`);
+    revalidatePath("/loans");
+    return { success: true };
+  } catch (err: unknown) {
+    console.error("Release items error:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to release items",
+    };
+  }
+}
