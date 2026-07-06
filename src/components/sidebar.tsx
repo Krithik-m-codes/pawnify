@@ -18,6 +18,7 @@ import {
   Sparkles,
   Sun,
   Moon,
+  UserCog,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useTheme } from "@/components/theme-provider";
@@ -207,7 +208,7 @@ function NavContent({
             border: "1px solid var(--border-primary)",
           }}
         >
-          <div className="min-w-0 flex-1">
+          <Link href="/profile" className="min-w-0 flex-1 hover:opacity-80 transition-opacity">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-sm truncate" style={{ color: "var(--text-primary)" }}>
                 {user.name}
@@ -234,7 +235,7 @@ function NavContent({
             <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-muted)" }}>
               {user.email}
             </p>
-          </div>
+          </Link>
           <button
             onClick={handleLogout}
             disabled={loggingOut}
@@ -263,6 +264,7 @@ export function Sidebar({ user }: SidebarProps) {
     { label: "Loans", href: "/loans", icon: Coins },
     { label: "Follow-ups", href: "/followups", icon: CalendarCheck },
     { label: "Reports", href: "/reports", icon: BarChart3 },
+    { label: "My Profile", href: "/profile", icon: UserCog },
   ];
 
   const adminItems: NavItem[] = [

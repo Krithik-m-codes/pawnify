@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { DocumentUploader } from "@/components/document-uploader";
 import { createLoanAction } from "./actions";
 import {
   Coins,
@@ -247,7 +248,7 @@ function NewLoanForm() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="w-full max-w-6xl mx-auto">
       <div className="mb-4">
         <Link
           href="/loans"
@@ -697,6 +698,14 @@ function NewLoanForm() {
                 <div>• ₹2,50,001 - ₹5,00,000 : 80% LTV Cap</div>
                 <div>• &gt; ₹5,00,000 : 75% LTV Cap</div>
               </div>
+            </div>
+
+            {/* Collateral & Agreement Documents Upload */}
+            <div className="pt-2">
+              <DocumentUploader
+                label="Upload Collateral Photos & Signed Pawn Agreement"
+                bucket="pawnify-collateral"
+              />
             </div>
 
             {/* Submit Button */}

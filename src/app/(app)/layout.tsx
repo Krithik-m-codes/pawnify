@@ -18,7 +18,7 @@ export default async function AppLayout({
     <div className="flex min-h-screen" style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}>
       <Sidebar user={user} />
       <main className="flex-1 min-w-0 overflow-x-hidden flex flex-col">
-        <div className="w-full flex-1 p-4 sm:p-6 lg:p-8 pt-16 lg:pt-8 animate-fadeIn">
+        <div className="w-full flex-1 p-4 sm:p-6 lg:p-8 pt-16 lg:pt-8 animate-fadeIn flex flex-col">
           {children}
         </div>
       </main>

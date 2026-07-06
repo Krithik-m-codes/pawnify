@@ -9,6 +9,7 @@ import {
   ReleaseItemsButton,
   PawnTicketPrintButton,
 } from "./loan-actions-client";
+import { LoanCrudButtons } from "./loan-crud-buttons";
 import {
   Coins,
   AlertTriangle,
@@ -115,6 +116,11 @@ export default async function LoanDetailPage({ params }: PageProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 print:hidden shrink-0">
+          <LoanCrudButtons
+            loanId={loan.id}
+            loanNumber={loan.loanNumber}
+            initialNotes={loan.notes || ""}
+          />
           <PawnTicketPrintButton />
           
           <ReleaseItemsButton

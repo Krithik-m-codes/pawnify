@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { DocumentUploader } from "@/components/document-uploader";
 import { createCustomerAction } from "./actions";
 import {
   User,
@@ -79,7 +80,7 @@ export default function NewCustomerPage() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full max-w-5xl mx-auto">
       <div className="mb-4">
         <Link
           href="/customers"
@@ -277,6 +278,14 @@ export default function NewCustomerPage() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Supabase KYC Documents Upload */}
+        <div className="glass-card p-6 sm:p-8 space-y-4">
+          <DocumentUploader
+            label="Upload Customer KYC Documents (Aadhaar / PAN / Photo ID)"
+            bucket="pawnify-kyc"
+          />
         </div>
 
         {/* Submit Actions */}

@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/page-header";
-import { NewFollowUpModal, FollowUpStatusButton } from "./followup-client";
+import { NewFollowUpModal, FollowUpStatusButton, DeleteFollowUpButton } from "./followup-client";
 import {
   CalendarCheck,
   CheckCircle2,
@@ -188,7 +188,10 @@ export default async function FollowUpsPage({ searchParams }: PageProps) {
                         </span>
                       </td>
                       <td className="text-right">
-                        <FollowUpStatusButton id={f.id} currentStatus={f.status} />
+                        <div className="flex items-center justify-end gap-2">
+                          <FollowUpStatusButton id={f.id} currentStatus={f.status} />
+                          <DeleteFollowUpButton id={f.id} />
+                        </div>
                       </td>
                     </tr>
                   );

@@ -22,23 +22,28 @@ export async function getSession() {
 }
 
 /**
- * Require an authenticated session. Redirects to /login if not authenticated.
+ * Require an authenticated session. Redirects to /login if not authenticated or missing role.
  */
 export async function requireSession() {
   const session = await getSession();
-  if (!session) {
+  if (!session || !session.user) {
     redirect("/login");
+  }
+  const user = session.user as unknown as SessionUser;
+  if (!user.role || !user.isActive) {
+    redirect("/login?error=unauthorized_role");
   }
   return session;
 }
 
 /**
- * Require an admin session. Redirects appropriately if not admin.
+ * Require an admin session. Redirects to /login if not admin.
  */
 export async function requireAdmin() {
   const session = await requireSession();
-  if ((session.user as unknown as SessionUser).role !== "ADMIN") {
-    redirect("/dashboard");
+  const user = session.user as unknown as SessionUser;
+  if (user.role !== "ADMIN") {
+    redirect("/login?error=unauthorized_admin");
   }
   return session;
 }
@@ -52,12 +57,16 @@ export async function checkAuth(): Promise<
   | { authenticated: false; error: string }
 > {
   const session = await getSession();
-  if (!session) {
-    return { authenticated: false, error: "Not authenticated" };
+  if (!session || !session.user) {
+    return { authenticated: false, error: "Not authenticated. Please sign in." };
+  }
+  const user = session.user as unknown as SessionUser;
+  if (!user.role || !user.isActive) {
+    return { authenticated: false, error: "Access denied: User account inactive or missing role." };
   }
   return {
     authenticated: true,
-    user: session.user as unknown as SessionUser,
+    user,
     sessionId: session.session.id,
   };
 }
@@ -72,7 +81,7 @@ export async function checkAdmin(): Promise<
   const result = await checkAuth();
   if (!result.authenticated) return result;
   if (result.user.role !== "ADMIN") {
-    return { authenticated: false, error: "Admin access required" };
+    return { authenticated: false, error: "Access denied: Admin privileges required." };
   }
   return result;
 }

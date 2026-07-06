@@ -82,3 +82,50 @@ export async function releaseItemsAction(loanId: string) {
     };
   }
 }
+
+import { prisma } from "@/lib/db";
+
+export async function updateLoanNotesAction(loanId: string, notes: string) {
+  const auth = await checkAuth();
+  if (!auth.authenticated || !auth.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    await prisma.loan.update({
+      where: { id: loanId },
+      data: { notes: notes.trim() || null },
+    });
+    revalidatePath(`/loans/${loanId}`);
+    return { success: true };
+  } catch (err: unknown) {
+    console.error("Update loan notes error:", err);
+    return { success: false, error: err instanceof Error ? err.message : "Failed to update loan notes" };
+  }
+}
+
+export async function deleteLoanAction(loanId: string) {
+  const auth = await checkAuth();
+  if (!auth.authenticated || !auth.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    await prisma.loanItem.deleteMany({ where: { loanId } });
+    await prisma.payment.deleteMany({ where: { loanId } });
+    await prisma.loanCharge.deleteMany({ where: { loanId } });
+    await prisma.ledgerEntry.deleteMany({ where: { loanId } });
+    await prisma.followUp.deleteMany({ where: { loanId } });
+    await prisma.loan.delete({ where: { id: loanId } });
+
+    revalidatePath("/loans");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (err: unknown) {
+    console.error("Delete loan error:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to delete loan",
+    };
+  }
+}

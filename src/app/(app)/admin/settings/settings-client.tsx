@@ -61,7 +61,7 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl">
+    <form onSubmit={handleSubmit} className="space-y-8 w-full max-w-5xl mx-auto">
       {error && (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-3">
           <AlertCircle className="w-5 h-5 shrink-0" />

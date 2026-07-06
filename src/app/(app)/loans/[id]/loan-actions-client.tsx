@@ -124,7 +124,7 @@ export function RecordPaymentModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+    <div className="fixed inset-0 bg-black/35 dark:bg-black/45 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
       <div className="glass-card w-full max-w-lg p-6 sm:p-8 space-y-6 relative border-amber-500/30 shadow-2xl bg-zinc-950">
         <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
           <div className="flex items-center gap-2">

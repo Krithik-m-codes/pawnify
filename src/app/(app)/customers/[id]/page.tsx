@@ -5,6 +5,7 @@ import { getCustomerById, checkPanRequired } from "@/lib/services/customers";
 import { maskDocNumber } from "@/lib/validation/customer";
 import { PageHeader } from "@/components/page-header";
 import { AddKycForm, VerifyKycButtons } from "./kyc-actions";
+import { CustomerCrudButtons } from "./customer-crud-buttons";
 import {
   User,
   Phone,
@@ -102,13 +103,27 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           customer.createdBy.name
         }`}
         action={
-          <Link
-            href={`/loans/new?customerId=${customer.id}`}
-            className="btn-primary text-xs px-4 py-2.5 shadow-md shadow-amber-500/10"
-          >
-            <Plus className="w-4 h-4" />
-            Disburse New Loan
-          </Link>
+          <div className="flex items-center gap-2">
+            <CustomerCrudButtons
+              customer={{
+                id: customer.id,
+                fullName: customer.fullName,
+                phone: customer.phone,
+                email: customer.email,
+                addressLine1: customer.addressLine1,
+                city: customer.city,
+                state: customer.state,
+                pincode: customer.pincode,
+              }}
+            />
+            <Link
+              href={`/loans/new?customerId=${customer.id}`}
+              className="btn-primary text-xs px-4 py-2.5 shadow-md shadow-amber-500/10"
+            >
+              <Plus className="w-4 h-4" />
+              Disburse New Loan
+            </Link>
+          </div>
         }
       />
 

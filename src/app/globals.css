@@ -338,6 +338,20 @@ html.dark .badge-rejected {
   color: var(--text-muted);
 }
 
+/* Ensure left padding overrides for inputs with search/icons so they NEVER overlap */
+.input-field[class*="pl-10"],
+input[class*="pl-10"] {
+  padding-left: 2.5rem !important;
+}
+.input-field[class*="pl-11"],
+input[class*="pl-11"] {
+  padding-left: 2.75rem !important;
+}
+.input-field[class*="pl-12"],
+input[class*="pl-12"] {
+  padding-left: 3rem !important;
+}
+
 .input-label {
   display: block;
   font-size: 0.8125rem;

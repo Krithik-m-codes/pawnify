@@ -68,7 +68,7 @@ export function NewFollowUpModal({ loans }: { loans: ActiveLoanOption[] }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+    <div className="fixed inset-0 bg-black/35 dark:bg-black/45 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
       <div className="glass-card w-full max-w-md p-6 space-y-5 bg-zinc-950 border-amber-500/30">
         <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
           <div className="flex items-center gap-2">
@@ -204,6 +204,36 @@ export function FollowUpStatusButton({
     >
       <Clock className="w-3.5 h-3.5 text-amber-400" />
       Mark Done
+    </button>
+  );
+}
+
+import { Trash2 } from "lucide-react";
+import { deleteFollowUpAction } from "./actions";
+
+export function DeleteFollowUpButton({ id }: { id: string }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this reminder?")) return;
+    setLoading(true);
+    await deleteFollowUpAction(id);
+    setLoading(false);
+    router.refresh();
+  };
+
+  if (loading) {
+    return <Loader2 className="w-4 h-4 animate-spin text-red-400" />;
+  }
+
+  return (
+    <button
+      onClick={handleDelete}
+      title="Delete Reminder"
+      className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+    >
+      <Trash2 className="w-4 h-4" />
     </button>
   );
 }

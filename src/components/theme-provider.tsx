@@ -19,13 +19,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const stored = localStorage.getItem("pawnify-theme") as Theme | null;
-    if (stored === "light" || stored === "dark") {
-      setTheme(stored);
-    } else {
-      setTheme("light");
-    }
+    queueMicrotask(() => {
+      setMounted(true);
+      const stored = localStorage.getItem("pawnify-theme") as Theme | null;
+      if (stored === "light" || stored === "dark") {
+        setTheme(stored);
+      } else {
+        setTheme("light");
+      }
+    });
   }, []);
 
   useEffect(() => {

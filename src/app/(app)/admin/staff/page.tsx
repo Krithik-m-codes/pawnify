@@ -2,7 +2,7 @@ import React from "react";
 import { checkAuth } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/page-header";
-import { AddStaffModal, ToggleUserStatusButton } from "./staff-client";
+import { AddStaffModal, ToggleUserStatusButton, DeleteStaffUserButton } from "./staff-client";
 import { ShieldCheck, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { redirect } from "next/navigation";
 
@@ -25,22 +25,22 @@ export default async function StaffManagementPage() {
         },
       },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
   });
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: Date) => {
     return new Intl.DateTimeFormat("en-IN", {
       day: "2-digit",
       month: "short",
       year: "numeric",
-    }).format(new Date(date));
+    }).format(new Date(dateString));
   };
 
   return (
     <div>
       <PageHeader
-        title="Staff & User Accounts Management"
-        description="Admin panel to provision branch staff credentials, assign role privileges, and review activity counts."
+        title="Staff & User Management"
+        description="Create institutional staff credentials, assign branch vault roles, and manage active system access."
         action={<AddStaffModal />}
       />
 
@@ -50,33 +50,33 @@ export default async function StaffManagementPage() {
             <thead>
               <tr>
                 <th>Staff Member</th>
-                <th>Role & Access</th>
+                <th>Role Assignment</th>
                 <th>Status</th>
                 <th>Activity Stats</th>
-                <th>Registered Date</th>
-                <th className="text-right">Action</th>
+                <th>Created Date</th>
+                <th className="text-right">Access Controls</th>
               </tr>
             </thead>
             <tbody>
               {users.map((u) => {
                 const isSelf = u.id === auth.user?.id;
                 return (
-                  <tr key={u.id} className={!u.isActive ? "opacity-60 bg-zinc-900/30" : ""}>
+                  <tr key={u.id}>
                     <td>
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700/60 flex items-center justify-center font-bold text-amber-400 text-sm shrink-0">
-                          {u.name.charAt(0).toUpperCase()}
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center font-mono font-bold text-amber-400 text-xs">
+                          {u.name.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-semibold text-zinc-200 flex items-center gap-1.5">
+                          <div className="font-bold text-zinc-100 text-sm flex items-center gap-2">
                             {u.name}
                             {isSelf && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-normal">
                                 You
                               </span>
                             )}
                           </div>
-                          <div className="text-[11px] text-zinc-500 font-mono">
+                          <div className="text-xs text-zinc-500 font-mono">
                             {u.email}
                           </div>
                         </div>
@@ -84,13 +84,13 @@ export default async function StaffManagementPage() {
                     </td>
                     <td>
                       <span
-                        className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase inline-flex items-center gap-1 ${
+                        className={`text-[10px] px-2.5 py-1 rounded-full font-bold inline-flex items-center gap-1 ${
                           u.role === "ADMIN"
-                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                            : "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                            ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                            : "bg-blue-500/10 text-blue-400 border border-blue-500/30"
                         }`}
                       >
-                        <ShieldCheck className="w-3 h-3" />
+                        {u.role === "ADMIN" && <ShieldCheck className="w-3 h-3" />}
                         {u.role}
                       </span>
                     </td>
@@ -121,11 +121,18 @@ export default async function StaffManagementPage() {
                       </div>
                     </td>
                     <td className="text-right">
-                      <ToggleUserStatusButton
-                        userId={u.id}
-                        isActive={u.isActive}
-                        isSelf={isSelf}
-                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <ToggleUserStatusButton
+                          userId={u.id}
+                          isActive={u.isActive}
+                          isSelf={isSelf}
+                        />
+                        <DeleteStaffUserButton
+                          userId={u.id}
+                          isSelf={isSelf}
+                          userName={u.name}
+                        />
+                      </div>
                     </td>
                   </tr>
                 );

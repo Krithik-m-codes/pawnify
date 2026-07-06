@@ -57,3 +57,23 @@ export async function updateFollowUpStatusAction(id: string, status: FollowUpSta
     return { success: false, error: "Failed to update follow-up status" };
   }
 }
+
+export async function deleteFollowUpAction(id: string) {
+  const auth = await checkAuth();
+  if (!auth.authenticated || !auth.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    const f = await prisma.followUp.delete({
+      where: { id },
+    });
+
+    revalidatePath("/followups");
+    revalidatePath(`/loans/${f.loanId}`);
+    return { success: true };
+  } catch (err: unknown) {
+    console.error("Delete follow-up error:", err);
+    return { success: false, error: "Failed to delete follow-up task" };
+  }
+}
