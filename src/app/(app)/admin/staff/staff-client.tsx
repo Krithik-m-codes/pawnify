@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createStaffUserAction, updateStaffStatusAction, updateStaffUserAction, deleteStaffUserAction } from "./actions";
+import React, { useState, useRef } from "react";
+import { createPortal } from "react-dom";
+import {
+  useCreateStaffUserMutation,
+  useUpdateStaffStatusMutation,
+  useUpdateStaffUserMutation,
+  useDeleteStaffUserMutation,
+} from "@/lib/redux/api/staffApi";
 import {
   Plus,
   ShieldCheck,
@@ -10,7 +15,6 @@ import {
   UserX,
   Loader2,
   AlertCircle,
-  X,
   Lock,
   Mail,
   User,
@@ -18,11 +22,30 @@ import {
   Trash2,
   MoreVertical,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 export function AddStaffModal() {
-  const router = useRouter();
+  const [createStaffUser, { isLoading: loading }] = useCreateStaffUserMutation();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
@@ -32,53 +55,42 @@ export function AddStaffModal() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
-    const res = await createStaffUserAction({ name, email, password, role });
-    if (!res.success) {
-      setError(res.error || "Failed to create user");
-      setLoading(false);
+    const res = await createStaffUser({ name, email, password, role });
+    if ("error" in res) {
+      setError((res.error as { message?: string })?.message || "Failed to create user");
       return;
     }
 
     setName("");
     setEmail("");
     setPassword("password123");
-    setLoading(false);
+    setRole("STAFF");
     setOpen(false);
-    router.refresh();
   };
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="btn-primary text-xs px-4 py-2.5 shadow-md shadow-amber-500/10 cursor-pointer flex items-center gap-1.5"
-      >
-        <Plus className="w-4 h-4" />
-        Add Staff Member
-      </button>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 bg-black/35 dark:bg-black/45 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-      <div className="glass-card w-full max-w-md p-6 space-y-5 bg-zinc-950 border-amber-500/30 text-left shadow-2xl">
-        <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-amber-400" />
-            <h2 className="text-base font-bold text-zinc-100">
-              Create New Staff / Admin Account
-            </h2>
-          </div>
-          <button
-            onClick={() => setOpen(false)}
-            className="p-1 rounded text-zinc-400 hover:text-zinc-100 cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          onClick={() => {
+            setOpen(true);
+            setError(null);
+          }}
+          className="shadow-md shadow-amber-500/10"
+        >
+          <Plus className="w-4 h-4" />
+          Add Staff Member
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="border-(--accent-border)">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-(--accent)" />
+            <span>Create New Staff / Admin Account</span>
+          </DialogTitle>
+        </DialogHeader>
 
         {error && (
           <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
@@ -88,78 +100,69 @@ export function AddStaffModal() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="input-label flex items-center gap-1.5" htmlFor="name">
-              <User className="w-3.5 h-3.5 text-zinc-400" />
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-(--text-secondary)" />
               Full Name *
-            </label>
-            <input
-              id="name"
+            </Label>
+            <Input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Ramesh Kumar"
-              className="input-field text-xs py-2.5"
               required
             />
           </div>
 
-          <div>
-            <label className="input-label flex items-center gap-1.5" htmlFor="email">
-              <Mail className="w-3.5 h-3.5 text-zinc-400" />
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-(--text-secondary)" />
               Email Address *
-            </label>
-            <input
-              id="email"
+            </Label>
+            <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ramesh@pawnify.com"
-              className="input-field text-xs py-2.5"
               required
             />
           </div>
 
-          <div>
-            <label className="input-label flex items-center gap-1.5" htmlFor="password">
-              <Lock className="w-3.5 h-3.5 text-zinc-400" />
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-(--text-secondary)" />
               Initial Password *
-            </label>
-            <input
-              id="password"
+            </Label>
+            <Input
               type="text"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-field font-mono text-xs py-2.5"
+              className="font-mono"
               required
             />
           </div>
 
-          <div>
-            <label className="input-label">Role Permissions *</label>
+          <div className="space-y-1.5">
+            <Label>Role Permissions *</Label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as "ADMIN" | "STAFF")}
-              className="input-field bg-zinc-950 text-xs py-2.5"
+              className="flex h-10 w-full rounded-md border border-input bg-(--bg-input) px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <option value="STAFF">STAFF — Can register customers & disburse loans</option>
-              <option value="ADMIN">ADMIN — Full system access & staff management</option>
+              <option value="STAFF" className="bg-(--bg-input) text-(--text-primary)">
+                STAFF — Can register customers & disburse loans
+              </option>
+              <option value="ADMIN" className="bg-(--bg-input) text-(--text-primary)">
+                ADMIN — Full system access & staff management
+              </option>
             </select>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="btn-secondary text-xs px-4 py-2 cursor-pointer"
-            >
+            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary text-xs px-5 py-2 cursor-pointer flex items-center gap-1.5"
-            >
+            </Button>
+            <Button type="submit" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -168,11 +171,11 @@ export function AddStaffModal() {
               ) : (
                 "Create Account"
               )}
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -189,9 +192,8 @@ export function EditStaffUserModal({
   };
   isSelf: boolean;
 }) {
-  const router = useRouter();
+  const [updateStaffUser, { isLoading: loading }] = useUpdateStaffUserMutation();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState(user.name);
@@ -201,147 +203,128 @@ export function EditStaffUserModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
-    const res = await updateStaffUserAction(user.id, { name, email, role, isActive });
-    setLoading(false);
-    if (!res.success) {
-      setError(res.error || "Failed to update staff user");
+    const res = await updateStaffUser({ userId: user.id, data: { name, email, role, isActive } });
+    if ("error" in res) {
+      setError((res.error as { message?: string })?.message || "Failed to update staff user");
     } else {
       setOpen(false);
-      router.refresh();
     }
   };
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        title="Edit Staff Account & Roles"
-        className="btn-secondary text-xs px-3 py-1 hover:border-emerald-500/40 hover:text-emerald-400 transition-colors cursor-pointer flex items-center gap-1 text-zinc-300"
-      >
-        <Edit2 className="w-3.5 h-3.5 text-emerald-400" />
-        Edit Role
-      </button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            setOpen(true);
+            setError(null);
+          }}
+          title="Edit Staff Account & Roles"
+          className="hover:border-(--accent-border) hover:text-(--accent) text-(--text-secondary)"
+        >
+          <Edit2 className="w-3.5 h-3.5 text-(--accent)" />
+          Edit Role
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="border-(--accent-border)">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit2 className="w-4 h-4 text-(--accent)" />
+            <span>Edit Staff Details & Role</span>
+          </DialogTitle>
+        </DialogHeader>
 
-      {open && (
-        <div className="fixed inset-0 bg-black/35 dark:bg-black/45 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-          <div className="glass-card w-full max-w-md p-6 space-y-5 bg-zinc-950 border-emerald-500/30 text-left shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-              <div className="flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-emerald-400" />
-                <h2 className="text-base font-bold text-zinc-100">
-                  Edit Staff Details & Role
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="p-1 rounded text-zinc-400 hover:text-zinc-100 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="input-label flex items-center gap-1.5" htmlFor="edit-name">
-                  <User className="w-3.5 h-3.5 text-zinc-400" />
-                  Full Name *
-                </label>
-                <input
-                  id="edit-name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input-field py-2.5"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="input-label flex items-center gap-1.5" htmlFor="edit-email">
-                  <Mail className="w-3.5 h-3.5 text-zinc-400" />
-                  Work Email Address *
-                </label>
-                <input
-                  id="edit-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-field font-mono py-2.5"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="input-label">Role Assignment *</label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as "ADMIN" | "STAFF")}
-                  disabled={isSelf}
-                  className="input-field bg-zinc-950 py-2.5 disabled:opacity-50"
-                >
-                  <option value="STAFF">STAFF — Can register customers & disburse loans</option>
-                  <option value="ADMIN">ADMIN — Full system access & staff management</option>
-                </select>
-                {isSelf && (
-                  <p className="text-[10px] text-amber-400/80 mt-1">
-                    You cannot demote your own active admin account.
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="input-label">Account Status</label>
-                <select
-                  value={isActive ? "active" : "inactive"}
-                  onChange={(e) => setIsActive(e.target.value === "active")}
-                  disabled={isSelf}
-                  className="input-field bg-zinc-950 py-2.5 disabled:opacity-50"
-                >
-                  <option value="active">Active — Account can log in and process transactions</option>
-                  <option value="inactive">Inactive — Account is locked and cannot log in</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="btn-secondary px-4 py-2 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary px-5 py-2 cursor-pointer flex items-center gap-1.5"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </button>
-              </div>
-            </form>
+        {error && (
+          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
-        </div>
-      )}
-    </>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-(--text-secondary)" />
+              Full Name *
+            </Label>
+            <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-(--text-secondary)" />
+              Work Email Address *
+            </Label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="font-mono"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Role Assignment *</Label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as "ADMIN" | "STAFF")}
+              disabled={isSelf}
+              className="flex h-10 w-full rounded-md border border-input bg-(--bg-input) px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="STAFF" className="bg-(--bg-input) text-(--text-primary)">
+                STAFF — Can register customers & disburse loans
+              </option>
+              <option value="ADMIN" className="bg-(--bg-input) text-(--text-primary)">
+                ADMIN — Full system access & staff management
+              </option>
+            </select>
+            {isSelf && (
+              <p className="text-[10px] text-(--accent)/80 mt-1">
+                You cannot demote your own active admin account.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Account Status</Label>
+            <select
+              value={isActive ? "active" : "inactive"}
+              onChange={(e) => setIsActive(e.target.value === "active")}
+              disabled={isSelf}
+              className="flex h-10 w-full rounded-md border border-input bg-(--bg-input) px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="active" className="bg-(--bg-input) text-(--text-primary)">
+                Active — Account can log in and process transactions
+              </option>
+              <option value="inactive" className="bg-(--bg-input) text-(--text-primary)">
+                Inactive — Account is locked and cannot log in
+              </option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -354,50 +337,80 @@ export function ToggleUserStatusButton({
   isActive: boolean;
   isSelf: boolean;
 }) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [updateStaffStatus, { isLoading: loading }] = useUpdateStaffStatusMutation();
+  const [open, setOpen] = useState(false);
 
   const toggle = async () => {
     if (isSelf) return;
-    if (!confirm(`Are you sure you want to ${isActive ? "deactivate" : "reactivate"} this user account?`)) {
-      return;
-    }
-    setLoading(true);
-    await updateStaffStatusAction(userId, !isActive);
-    setLoading(false);
-    router.refresh();
+    await updateStaffStatus({ userId, isActive: !isActive });
+    setOpen(false);
   };
 
   if (isSelf) {
-    return <span className="text-[10px] text-zinc-500 italic">Current user</span>;
+    return <span className="text-[10px] text-(--text-muted) italic">Current user</span>;
   }
 
   if (loading) {
-    return <Loader2 className="w-4 h-4 animate-spin text-amber-400" />;
-  }
-
-  if (isActive) {
-    return (
-      <button
-        onClick={toggle}
-        title="Deactivate Account"
-        className="btn-secondary text-xs px-3 py-1 hover:border-red-500/40 hover:text-red-400 transition-colors cursor-pointer flex items-center gap-1.5"
-      >
-        <UserX className="w-3.5 h-3.5 text-red-400" />
-        Deactivate
-      </button>
-    );
+    return <Loader2 className="w-4 h-4 animate-spin text-(--accent)" />;
   }
 
   return (
-    <button
-      onClick={toggle}
-      title="Reactivate Account"
-      className="btn-secondary text-xs px-3 py-1 hover:border-emerald-500/40 hover:text-emerald-400 transition-colors cursor-pointer flex items-center gap-1.5 text-zinc-400"
-    >
-      <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-      Reactivate
-    </button>
+    <>
+      {isActive ? (
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setOpen(true)}
+          title="Deactivate Account"
+          className="hover:border-red-500/40 hover:text-red-400"
+        >
+          <UserX className="w-3.5 h-3.5 text-red-400" />
+          Deactivate
+        </Button>
+      ) : (
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setOpen(true)}
+          title="Reactivate Account"
+          className="hover:border-(--accent-border) hover:text-(--accent) text-(--text-secondary)"
+        >
+          <UserCheck className="w-3.5 h-3.5 text-(--accent)" />
+          Reactivate
+        </Button>
+      )}
+
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent className={isActive ? "border-red-500/40" : "border-(--accent-border)"}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-(--text-primary)">
+              {isActive ? (
+                <UserX className="w-5 h-5 text-red-400" />
+              ) : (
+                <UserCheck className="w-5 h-5 text-(--accent)" />
+              )}
+              <span>Confirm Status Change</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {isActive ? "deactivate" : "reactivate"} this user account?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setOpen(false)}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant={isActive ? "destructive" : "default"}
+              onClick={toggle}
+              disabled={loading}
+              className="font-bold flex items-center gap-1.5"
+            >
+              {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              Yes, {isActive ? "Deactivate" : "Reactivate"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -410,20 +423,19 @@ export function DeleteStaffUserButton({
   isSelf: boolean;
   userName: string;
 }) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [deleteStaffUser, { isLoading: loading }] = useDeleteStaffUserMutation();
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (isSelf) return null;
 
   const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to permanently delete staff account (${userName})?`)) return;
-    setLoading(true);
-    const res = await deleteStaffUserAction(userId);
-    setLoading(false);
-    if (res.error) {
-      alert(res.error);
+    setError(null);
+    const res = await deleteStaffUser(userId);
+    if ("error" in res) {
+      setError((res.error as { message?: string })?.message || "Failed to delete staff account");
     } else {
-      router.refresh();
+      setOpen(false);
     }
   };
 
@@ -432,13 +444,59 @@ export function DeleteStaffUserButton({
   }
 
   return (
-    <button
-      onClick={handleDelete}
-      title="Delete Staff Account"
-      className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-    >
-      <Trash2 className="w-4 h-4" />
-    </button>
+    <>
+      <button
+        onClick={() => {
+          setOpen(true);
+          setError(null);
+        }}
+        title="Delete Staff Account"
+        className="p-1.5 rounded-lg text-(--text-muted) hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent className="border-red-500/40">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-400">
+              <Trash2 className="w-5 h-5" />
+              <span>Confirm Account Deletion</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete staff account (
+              <strong className="text-(--text-primary)">{userName}</strong>)? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {error && (
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setOpen(false)}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={loading}
+              className="font-bold flex items-center gap-1.5"
+            >
+              {loading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5" />
+              )}
+              Delete Account
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -457,83 +515,92 @@ export function StaffActionsMenu({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, right: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const toggleMenu = () => {
+    if (!menuOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    }
+    setMenuOpen(!menuOpen);
+  };
 
   return (
-    <div className="relative inline-flex items-center gap-1.5 justify-end">
-      {/* Quick Edit Button */}
+    <div className="relative inline-block text-right">
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setEditOpen(true)}
-        className="btn-secondary text-xs px-2.5 py-1.5 inline-flex items-center gap-1 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer"
-        title="Edit Staff Details & Role"
+        onClick={toggleMenu}
+        className="p-1 rounded-lg transition-colors cursor-pointer"
+        style={{ color: "var(--text-secondary)" }}
+        title="More Access Options"
       >
-        <Edit2 className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Edit</span>
+        <MoreVertical className="w-4 h-4" />
       </button>
 
-      {/* 3-Dot Dropdown Trigger */}
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-amber-400 hover:border-amber-500/40 transition-colors cursor-pointer"
-          title="More Access Options"
-        >
-          <MoreVertical className="w-4 h-4" />
-        </button>
-
-        {menuOpen && (
+      {menuOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
           <>
+            <div className="fixed inset-0 z-[9998]" onClick={() => setMenuOpen(false)} />
             <div
-              className="fixed inset-0 z-40"
-              onClick={() => setMenuOpen(false)}
-            />
-            <div className="absolute right-0 mt-1.5 w-48 rounded-xl bg-zinc-950 border border-zinc-800 shadow-2xl py-1.5 z-50 text-left animate-fadeIn">
+              className="fixed z-[9999] w-48 rounded-xl shadow-2xl py-1.5 text-left animate-fadeIn"
+              style={{
+                top: coords.top,
+                right: coords.right,
+                background: "var(--bg-card)",
+                border: "1px solid var(--border-primary)",
+              }}
+            >
               <button
                 type="button"
                 onClick={() => {
                   setMenuOpen(false);
                   setEditOpen(true);
                 }}
-                className="w-full px-3.5 py-2 text-xs text-zinc-200 hover:bg-zinc-900 hover:text-emerald-400 flex items-center gap-2 transition-colors cursor-pointer"
+                className="w-full px-3.5 py-2 text-xs flex items-center gap-2 transition-colors cursor-pointer hover:opacity-80"
+                style={{ color: "var(--text-primary)" }}
               >
-                <Edit2 className="w-3.5 h-3.5 text-emerald-400" />
-                Edit Role & Info
+                <Edit2 className="w-3.5 h-3.5" style={{ color: "var(--accent-text)" }} />
+                <span>Edit Role & Info</span>
               </button>
 
-              <div className="my-1 border-t border-zinc-800/80" />
+              <div className="my-1" style={{ borderTop: "1px solid var(--border-secondary)" }} />
 
               <div className="px-3.5 py-1.5 flex items-center justify-between">
-                <span className="text-[11px] text-zinc-400">Status:</span>
-                <ToggleUserStatusButton
-                  userId={user.id}
-                  isActive={user.isActive}
-                  isSelf={isSelf}
-                />
+                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                  Status:
+                </span>
+                <ToggleUserStatusButton userId={user.id} isActive={user.isActive} isSelf={isSelf} />
               </div>
 
               {!isSelf && (
                 <>
-                  <div className="my-1 border-t border-zinc-800/80" />
+                  <div
+                    className="my-1"
+                    style={{ borderTop: "1px solid var(--border-secondary)" }}
+                  />
                   <div className="px-3.5 py-1.5 flex items-center justify-between">
-                    <span className="text-[11px] text-red-400 font-medium">Delete:</span>
-                    <DeleteStaffUserButton
-                      userId={user.id}
-                      isSelf={isSelf}
-                      userName={user.name}
-                    />
+                    <span className="text-[11px] text-red-500 font-medium">Delete:</span>
+                    <DeleteStaffUserButton userId={user.id} isSelf={isSelf} userName={user.name} />
                   </div>
                 </>
               )}
             </div>
-          </>
+          </>,
+          document.body
         )}
-      </div>
 
       {/* Embedded Edit Modal */}
-      {editOpen && (
-        <EditModalContent user={user} isSelf={isSelf} onClose={() => setEditOpen(false)} />
-      )}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="border-(--accent-border)">
+          <EditModalContent user={user} isSelf={isSelf} onClose={() => setEditOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -553,8 +620,7 @@ function EditModalContent({
   isSelf: boolean;
   onClose: () => void;
 }) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [updateStaffUser, { isLoading: loading }] = useUpdateStaffUserMutation();
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState(user.name);
@@ -564,133 +630,110 @@ function EditModalContent({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
-    const res = await updateStaffUserAction(user.id, { name, email, role, isActive });
-    setLoading(false);
-    if (!res.success) {
-      setError(res.error || "Failed to update staff user");
+    const res = await updateStaffUser({ userId: user.id, data: { name, email, role, isActive } });
+    if ("error" in res) {
+      setError((res.error as { message?: string })?.message || "Failed to update staff user");
     } else {
       onClose();
-      router.refresh();
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/45 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-      <div className="glass-card w-full max-w-md p-6 space-y-5 bg-zinc-950 border-emerald-500/30 text-left shadow-2xl">
-        <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-          <div className="flex items-center gap-2">
-            <Edit2 className="w-4 h-4 text-emerald-400" />
-            <h2 className="text-base font-bold text-zinc-100">
-              Edit Staff Account & Permissions
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded text-zinc-400 hover:text-zinc-100 cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <Edit2 className="w-4 h-4 text-(--accent)" />
+          <span>Edit Staff Account & Permissions</span>
+        </DialogTitle>
+      </DialogHeader>
+
+      {error && (
+        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5 text-(--text-secondary)" />
+            Full Name *
+          </Label>
+          <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
         </div>
 
-        {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5">
+            <Mail className="w-3.5 h-3.5 text-(--text-secondary)" />
+            Work Email Address *
+          </Label>
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="font-mono"
+            required
+          />
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="input-label flex items-center gap-1.5" htmlFor="modal-name">
-              <User className="w-3.5 h-3.5 text-zinc-400" />
-              Full Name *
-            </label>
-            <input
-              id="modal-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="input-field py-2.5"
-              required
-            />
-          </div>
+        <div className="space-y-1.5">
+          <Label>Role Assignment *</Label>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as "ADMIN" | "STAFF")}
+            disabled={isSelf}
+            className="flex h-10 w-full rounded-md border border-input bg-(--bg-input) px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="STAFF" className="bg-(--bg-input) text-(--text-primary)">
+              STAFF — Can register customers & disburse loans
+            </option>
+            <option value="ADMIN" className="bg-(--bg-input) text-(--text-primary)">
+              ADMIN — Full system access & staff management
+            </option>
+          </select>
+          {isSelf && (
+            <p className="text-[10px] text-(--accent)/80 mt-1">
+              You cannot demote your own active admin account.
+            </p>
+          )}
+        </div>
 
-          <div>
-            <label className="input-label flex items-center gap-1.5" htmlFor="modal-email">
-              <Mail className="w-3.5 h-3.5 text-zinc-400" />
-              Work Email Address *
-            </label>
-            <input
-              id="modal-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input-field font-mono py-2.5"
-              required
-            />
-          </div>
+        <div className="space-y-1.5">
+          <Label>Account Status</Label>
+          <select
+            value={isActive ? "active" : "inactive"}
+            onChange={(e) => setIsActive(e.target.value === "active")}
+            disabled={isSelf}
+            className="flex h-10 w-full rounded-md border border-input bg-(--bg-input) px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="active" className="bg-(--bg-input) text-(--text-primary)">
+              Active — Account can log in and process transactions
+            </option>
+            <option value="inactive" className="bg-(--bg-input) text-(--text-primary)">
+              Inactive — Account is locked and cannot log in
+            </option>
+          </select>
+        </div>
 
-          <div>
-            <label className="input-label">Role Assignment *</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as "ADMIN" | "STAFF")}
-              disabled={isSelf}
-              className="input-field bg-zinc-950 py-2.5 disabled:opacity-50"
-            >
-              <option value="STAFF">STAFF — Can register customers & disburse loans</option>
-              <option value="ADMIN">ADMIN — Full system access & staff management</option>
-            </select>
-            {isSelf && (
-              <p className="text-[10px] text-amber-400/80 mt-1">
-                You cannot demote your own active admin account.
-              </p>
+        <div className="flex justify-end gap-3 pt-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
             )}
-          </div>
-
-          <div>
-            <label className="input-label">Account Status</label>
-            <select
-              value={isActive ? "active" : "inactive"}
-              onChange={(e) => setIsActive(e.target.value === "active")}
-              disabled={isSelf}
-              className="input-field bg-zinc-950 py-2.5 disabled:opacity-50"
-            >
-              <option value="active">Active — Account can log in and process transactions</option>
-              <option value="inactive">Inactive — Account is locked and cannot log in</option>
-            </select>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary px-4 py-2 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary px-5 py-2 cursor-pointer flex items-center gap-1.5"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Changes"
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </Button>
+        </div>
+      </form>
+    </>
   );
 }
-

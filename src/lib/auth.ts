@@ -21,11 +21,13 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
+      // input: false — role/isActive must never be settable from client sign-up payloads.
+      // Staff accounts are provisioned only via the admin-gated createStaffUserAction.
       role: {
         type: "string",
         required: false,
         defaultValue: "STAFF",
-        input: true,
+        input: false,
       },
       phone: {
         type: "string",
@@ -36,7 +38,7 @@ export const auth = betterAuth({
         type: "boolean",
         required: false,
         defaultValue: true,
-        input: true,
+        input: false,
       },
     },
   },

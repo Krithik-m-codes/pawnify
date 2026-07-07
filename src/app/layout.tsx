@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ReduxProvider } from "@/lib/redux/provider";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -33,9 +34,7 @@ export const metadata: Metadata = {
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
     ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   manifest: "/site.webmanifest",
   keywords: [
@@ -80,10 +79,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${poppins.variable} light`} suppressHydrationWarning>
-      <body className="min-h-screen font-sans antialiased" style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+      <body
+        className="min-h-screen font-sans antialiased"
+        style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}
+        suppressHydrationWarning
+      >
+        <ReduxProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </ReduxProvider>
       </body>
     </html>
   );

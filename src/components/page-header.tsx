@@ -13,11 +13,16 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
       style={{ borderBottom: "1px solid var(--border-primary)" }}
     >
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+        <h1
+          className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2"
+          style={{ color: "var(--text-primary)" }}
+        >
           {title}
         </h1>
         {description && (
-          <p className="mt-1 text-sm max-w-3xl" style={{ color: "var(--text-tertiary)" }}>{description}</p>
+          <p className="mt-1 text-sm max-w-3xl" style={{ color: "var(--text-tertiary)" }}>
+            {description}
+          </p>
         )}
       </div>
       {action && <div className="flex items-center gap-3 shrink-0">{action}</div>}

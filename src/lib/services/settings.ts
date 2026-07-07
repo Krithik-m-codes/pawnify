@@ -44,10 +44,10 @@ export function groupSettings(
 ): Record<string, Array<{ key: string; value: string; label: string }>> {
   const groups: Record<string, Array<{ key: string; value: string; label: string }>> = {
     "LTV Slabs": [],
-    "Interest": [],
+    Interest: [],
     "Grace Period": [],
     "PAN Threshold": [],
-    "Other": [],
+    Other: [],
   };
 
   const labelMap: Record<string, { group: string; label: string }> = {
@@ -70,7 +70,6 @@ export function groupSettings(
     }
   }
 
-  // Remove empty groups
   for (const key of Object.keys(groups)) {
     if (groups[key].length === 0) delete groups[key];
   }

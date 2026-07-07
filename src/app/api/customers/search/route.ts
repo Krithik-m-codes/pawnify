@@ -20,9 +20,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(customers);
   } catch (error) {
     console.error("Customer search error:", error);
-    return NextResponse.json(
-      { error: "Failed to search customers" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to search customers" }, { status: 500 });
   }
 }

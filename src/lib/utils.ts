@@ -7,7 +7,8 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatINR(val: string | number | undefined | null) {
   if (val === undefined || val === null) return "₹0";
-  const num = typeof val === "string" ? parseFloat(val) : typeof val === "object" ? Number(val) : val;
+  const num =
+    typeof val === "string" ? parseFloat(val) : typeof val === "object" ? Number(val) : val;
   if (isNaN(num)) return "₹0";
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -18,7 +19,8 @@ export function formatINR(val: string | number | undefined | null) {
 
 export function formatINRExact(val: string | number | undefined | null) {
   if (val === undefined || val === null) return "₹0.00";
-  const num = typeof val === "string" ? parseFloat(val) : typeof val === "object" ? Number(val) : val;
+  const num =
+    typeof val === "string" ? parseFloat(val) : typeof val === "object" ? Number(val) : val;
   if (isNaN(num)) return "₹0.00";
   return new Intl.NumberFormat("en-IN", {
     style: "currency",

@@ -1,10 +1,29 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { checkAuth } from "@/lib/auth/session";
-import { addKycDocument, updateKycStatus } from "@/lib/services/customers";
+import { checkAuth, checkAdmin } from "@/lib/auth/session";
+import {
+  addKycDocument,
+  updateKycStatus,
+  getCustomerById,
+  checkPanRequired,
+} from "@/lib/services/customers";
 import { kycDocumentSchema } from "@/lib/validation/customer";
 import { KycStatus } from "@prisma/client";
+import { serializeForClient } from "@/lib/serialize";
+
+export async function getCustomerDetailAction(customerId: string) {
+  const auth = await checkAuth();
+  if (!auth.authenticated) {
+    throw new Error(auth.error);
+  }
+  const customer = await getCustomerById(customerId);
+  if (!customer) {
+    throw new Error("Customer not found");
+  }
+  const panStatus = await checkPanRequired(customerId);
+  return { customer: serializeForClient(customer), panStatus };
+}
 
 export async function addKycDocumentAction(customerId: string, formData: unknown) {
   const auth = await checkAuth();
@@ -40,7 +59,11 @@ export async function addKycDocumentAction(customerId: string, formData: unknown
   }
 }
 
-export async function verifyKycDocumentAction(docId: string, customerId: string, status: KycStatus) {
+export async function verifyKycDocumentAction(
+  docId: string,
+  customerId: string,
+  status: KycStatus
+) {
   const auth = await checkAuth();
   if (!auth.authenticated || !auth.user) {
     return { success: false, error: "Unauthorized" };
@@ -106,9 +129,9 @@ export async function updateCustomerDetailsAction(
 }
 
 export async function deleteCustomerAction(customerId: string) {
-  const auth = await checkAuth();
-  if (!auth.authenticated || !auth.user) {
-    return { success: false, error: "Unauthorized" };
+  const auth = await checkAdmin();
+  if (!auth.authenticated) {
+    return { success: false, error: auth.error };
   }
 
   try {
@@ -142,4 +165,3 @@ export async function deleteCustomerAction(customerId: string) {
     };
   }
 }
-

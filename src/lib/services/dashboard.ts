@@ -5,6 +5,7 @@
 
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { debugLog } from "@/lib/debug";
 import { deriveLoanDisplayStatus } from "./loans";
 
 const Decimal = Prisma.Decimal;
@@ -19,7 +20,6 @@ export async function getDashboardStats() {
   const in30Days = new Date(today);
   in30Days.setDate(in30Days.getDate() + 30);
 
-  // Fetch all active loans for status derivation
   const activeLoans = await prisma.loan.findMany({
     where: { status: "ACTIVE" },
     select: {
@@ -28,20 +28,30 @@ export async function getDashboardStats() {
       dueDate: true,
       gracePeriodDays: true,
       status: true,
+      ltvPercent: true,
+      interestRateMonthly: true,
     },
   });
 
-  // Derive overdue vs active
   let activeCount = 0;
   let overdueCount = 0;
   let totalAUM = new Decimal(0);
   let overdueAmount = new Decimal(0);
   let dueIn7Days = 0;
   let dueIn30Days = 0;
+  let totalLtv = new Decimal(0);
+  let weeklyInterestAccrued = new Decimal(0);
 
   for (const loan of activeLoans) {
     const displayStatus = deriveLoanDisplayStatus(loan);
     totalAUM = totalAUM.plus(loan.principalOutstanding);
+    if (loan.ltvPercent) {
+      totalLtv = totalLtv.plus(loan.ltvPercent);
+    }
+    if (loan.interestRateMonthly) {
+      const monthlyInterest = loan.principalOutstanding.mul(loan.interestRateMonthly).div(100);
+      weeklyInterestAccrued = weeklyInterestAccrued.plus(monthlyInterest.div(4.33));
+    }
 
     if (displayStatus === "OVERDUE") {
       overdueCount++;
@@ -50,7 +60,6 @@ export async function getDashboardStats() {
       activeCount++;
     }
 
-    // Check upcoming due dates
     if (loan.dueDate >= today && loan.dueDate <= in7Days) {
       dueIn7Days++;
     }
@@ -59,7 +68,6 @@ export async function getDashboardStats() {
     }
   }
 
-  // Disbursed today / this week
   const [disbursedToday, disbursedWeek] = await Promise.all([
     prisma.loan.aggregate({
       where: { loanDate: { gte: today } },
@@ -73,7 +81,6 @@ export async function getDashboardStats() {
     }),
   ]);
 
-  // Recent loans
   const recentLoans = await prisma.loan.findMany({
     take: 5,
     orderBy: { createdAt: "desc" },
@@ -82,35 +89,46 @@ export async function getDashboardStats() {
     },
   });
 
-  // Overdue loans for attention
   const overdueLoans = activeLoans
     .filter((l) => deriveLoanDisplayStatus(l) === "OVERDUE")
     .slice(0, 10);
 
-  const overdueLoansDetailed = overdueLoans.length > 0
-    ? await prisma.loan.findMany({
-        where: { id: { in: overdueLoans.map((l) => l.id) } },
-        include: {
-          customer: { select: { fullName: true, phone: true } },
-        },
-        orderBy: { dueDate: "asc" },
-      })
-    : [];
+  const overdueLoansDetailed =
+    overdueLoans.length > 0
+      ? await prisma.loan.findMany({
+          where: { id: { in: overdueLoans.map((l) => l.id) } },
+          include: {
+            customer: { select: { fullName: true, phone: true } },
+          },
+          orderBy: { dueDate: "asc" },
+        })
+      : [];
 
-  // Closed loans count
   const closedCount = await prisma.loan.count({
     where: { status: "CLOSED" },
   });
 
-  // Total customers
   const customerCount = await prisma.customer.count();
 
-  // Collections today
   const collectionsToday = await prisma.payment.aggregate({
     where: { paymentDate: { gte: today } },
     _sum: { amountPaid: true },
     _count: true,
   });
+
+  const pendingFollowUpsCount = await prisma.followUp.count({
+    where: {
+      status: "PENDING",
+      dueDate: { gte: today, lte: in7Days },
+    },
+  });
+
+  const avgLtv = activeCount > 0 ? totalLtv.div(activeCount).toFixed(1) : "0";
+
+  debugLog(
+    "dashboard",
+    `getDashboardStats: active=${activeCount} overdue=${overdueCount} closed=${closedCount} AUM=${totalAUM.toString()}`
+  );
 
   return {
     activeCount,
@@ -120,6 +138,9 @@ export async function getDashboardStats() {
     overdueAmount: overdueAmount.toString(),
     dueIn7Days,
     dueIn30Days,
+    avgLtv,
+    weeklyInterestAccrued: weeklyInterestAccrued.toFixed(0),
+    pendingFollowUpsCount,
     disbursedToday: {
       count: disbursedToday._count,
       amount: disbursedToday._sum.principalAmount?.toString() ?? "0",
@@ -195,8 +216,21 @@ export async function getDashboardChartData() {
   // 3. Monthly Disbursed vs Collected (Last 6 Months)
   const monthlyData: Record<string, { month: string; disbursed: number; collected: number }> = {};
   const now = new Date();
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${months[d.getMonth()]} ${d.getFullYear().toString().slice(2)}`;
@@ -232,4 +266,3 @@ export async function getDashboardChartData() {
     monthlyTrend: Object.values(monthlyData),
   };
 }
-

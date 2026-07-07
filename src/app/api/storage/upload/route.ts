@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadToSupabaseBucket } from "@/lib/supabase-storage";
+import { checkAuth } from "@/lib/auth/session";
 
 export async function POST(req: NextRequest) {
+  const auth = await checkAuth();
+  if (!auth.authenticated) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;

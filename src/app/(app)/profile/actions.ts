@@ -11,7 +11,7 @@ export async function updateProfileNameAction(formData: FormData) {
     const name = formData.get("name") as string;
 
     if (!name || name.trim().length < 2) {
-      return { error: "Name must be at least 2 characters long" };
+      return { success: false, error: "Name must be at least 2 characters long" };
     }
 
     await prisma.user.update({
@@ -24,6 +24,25 @@ export async function updateProfileNameAction(formData: FormData) {
     return { success: true };
   } catch (err) {
     console.error("Update profile error:", err);
-    return { error: "Failed to update profile" };
+    return { success: false, error: "Failed to update profile" };
+  }
+}
+
+export async function updateProfileAvatarAction(avatarUrl: string) {
+  try {
+    const session = await requireSession();
+    const userId = (session.user as unknown as { id: string }).id;
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { image: avatarUrl },
+    });
+
+    revalidatePath("/profile");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (err) {
+    console.error("Update avatar error:", err);
+    return { success: false, error: "Failed to update avatar" };
   }
 }

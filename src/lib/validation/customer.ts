@@ -19,19 +19,13 @@ export const customerCreateSchema = z.object({
   phone: z
     .string()
     .regex(indianPhoneRegex, "Invalid Indian mobile number (must start with 6-9, 10 digits)"),
-  email: z
-    .string()
-    .email("Invalid email address")
-    .optional()
-    .or(z.literal("")),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")),
   dob: z.string().optional().or(z.literal("")),
   addressLine1: z.string().min(1, "Address is required").max(200).trim(),
   addressLine2: z.string().max(200).optional().or(z.literal("")),
   city: z.string().min(1, "City is required").max(100).trim(),
   state: z.string().min(1, "State is required").max(100).trim(),
-  pincode: z
-    .string()
-    .regex(/^\d{6}$/, "Pincode must be exactly 6 digits"),
+  pincode: z.string().regex(/^\d{6}$/, "Pincode must be exactly 6 digits"),
   photoUrl: z.string().url().optional().or(z.literal("")),
 });
 

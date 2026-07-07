@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
-import { recordPaymentAction, closeLoanAction, releaseItemsAction } from "./actions";
+import {
+  useRecordPaymentMutation,
+  useCloseLoanMutation,
+  useReleaseItemsMutation,
+} from "@/lib/redux/api/loansApi";
 import {
   Wallet,
   CheckCircle2,
@@ -18,6 +21,26 @@ import {
   Calendar,
   FileText,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 interface PaymentModalProps {
   loanId: string;
@@ -34,13 +57,14 @@ export function RecordPaymentModal({
   unsettledCharges,
   totalDue,
 }: PaymentModalProps) {
-  const router = useRouter();
+  const [recordPayment, { isLoading: loading }] = useRecordPaymentMutation();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const [amountPaid, setAmountPaid] = useState<number>(Math.ceil(accruedInterest + unsettledCharges));
+  const [amountPaid, setAmountPaid] = useState<number>(
+    Math.ceil(accruedInterest + unsettledCharges)
+  );
   const [mode, setMode] = useState<"CASH" | "UPI" | "BANK_TRANSFER" | "CARD">("UPI");
   const [notes, setNotes] = useState("");
 
@@ -51,19 +75,17 @@ export function RecordPaymentModal({
     setOpen(true);
   };
 
-  // Live Waterfall Allocation Preview (§6.4)
-  const computeWaterfallPreview = (amount: number) => {
-    let rem = amount;
+  const calculatePreview = (paid: number) => {
+    let rem = paid;
     const allocCharges = Math.min(rem, unsettledCharges);
     rem -= allocCharges;
     const allocInterest = Math.min(rem, accruedInterest);
     rem -= allocInterest;
     const allocPrincipal = Math.min(rem, principalOutstanding);
-    rem -= allocPrincipal;
     return { allocCharges, allocInterest, allocPrincipal };
   };
 
-  const preview = computeWaterfallPreview(amountPaid || 0);
+  const preview = calculatePreview(amountPaid || 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,36 +93,24 @@ export function RecordPaymentModal({
       setError("Payment amount must be greater than zero");
       return;
     }
-
-    setLoading(true);
     setError(null);
-    setSuccessMsg(null);
 
-    const res = await recordPaymentAction({
-      loanId,
-      amountPaid: Number(amountPaid),
-      mode,
-      notes: notes.trim(),
-    });
+    const res = await recordPayment({ loanId, amountPaid, mode, notes });
 
-    if (!res.success) {
-      setError(res.error || "Failed to record payment");
-      setLoading(false);
-      return;
+    if ("error" in res) {
+      setError((res.error as { message?: string })?.message || "Payment recording failed");
+    } else {
+      setSuccessMsg("Payment Recorded Successfully!");
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#10B981", "#34D399", "#059669"],
+      });
+      setTimeout(() => {
+        setOpen(false);
+      }, 1200);
     }
-
-    confetti({
-      particleCount: 70,
-      spread: 60,
-      origin: { y: 0.6 },
-      colors: ["#FACC15", "#10B981", "#3B82F6"],
-    });
-    setSuccessMsg(`Payment recorded! Receipt No: ${res.receiptNumber}`);
-    setLoading(false);
-    setTimeout(() => {
-      setOpen(false);
-      router.refresh();
-    }, 1500);
   };
 
   const formatINR = (num: number) => {
@@ -111,37 +121,23 @@ export function RecordPaymentModal({
     }).format(num);
   };
 
-  if (!open) {
-    return (
-      <button
-        onClick={handleOpen}
-        className="btn-primary text-xs px-4 py-2.5 shadow-md shadow-amber-500/10 cursor-pointer"
-      >
-        <Wallet className="w-4 h-4" />
-        Record Payment
-      </button>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 bg-black/35 dark:bg-black/45 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-      <div className="glass-card w-full max-w-lg p-6 sm:p-8 space-y-6 relative border-amber-500/30 shadow-2xl bg-zinc-950">
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button onClick={handleOpen} className="shadow-md shadow-amber-500/10">
+          <Wallet className="w-4 h-4 mr-2" />
+          Record Payment
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg border-(--accent-border)">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-(--accent-bg) text-(--accent) flex items-center justify-center">
               <Wallet className="w-4 h-4" />
             </div>
-            <h2 className="text-base font-bold text-zinc-100">
-              Record Loan Repayment
-            </h2>
-          </div>
-          <button
-            onClick={() => setOpen(false)}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            <span>Record Loan Repayment</span>
+          </DialogTitle>
+        </DialogHeader>
 
         {error && (
           <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
@@ -151,142 +147,148 @@ export function RecordPaymentModal({
         )}
 
         {successMsg && (
-          <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 animate-fadeIn">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-(--accent-text) text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-(--accent) shrink-0" />
             <span className="font-semibold">{successMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Total Due Breakdown */}
-          <div className="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2 text-xs">
-            <div className="font-semibold text-zinc-300 uppercase tracking-wider text-[11px] mb-2">
+          <div className="p-4 rounded-xl bg-(--bg-tertiary) border border-(--border-primary) space-y-2 text-xs">
+            <div className="font-semibold text-(--text-secondary) uppercase tracking-wider text-[11px] mb-2">
               Current Outstanding Breakdown
             </div>
-            <div className="flex justify-between text-zinc-400">
+            <div className="flex justify-between text-(--text-secondary)">
               <span>Unsettled Fees/Charges:</span>
-              <span className="font-mono text-zinc-200">{formatINR(unsettledCharges)}</span>
+              <span className="font-mono text-(--text-primary)">{formatINR(unsettledCharges)}</span>
             </div>
-            <div className="flex justify-between text-zinc-400">
+            <div className="flex justify-between text-(--text-secondary)">
               <span>Accrued Simple Interest:</span>
-              <span className="font-mono text-amber-400 font-semibold">{formatINR(accruedInterest)}</span>
+              <span className="font-mono text-(--accent) font-semibold">
+                {formatINR(accruedInterest)}
+              </span>
             </div>
-            <div className="flex justify-between text-zinc-400">
+            <div className="flex justify-between text-(--text-secondary)">
               <span>Principal Outstanding:</span>
-              <span className="font-mono text-zinc-200">{formatINR(principalOutstanding)}</span>
+              <span className="font-mono text-(--text-primary)">
+                {formatINR(principalOutstanding)}
+              </span>
             </div>
-            <div className="flex justify-between pt-2 border-t border-zinc-800 text-sm font-bold text-zinc-100">
+            <div className="flex justify-between pt-2 border-t border-(--border-primary) text-sm font-bold text-(--text-primary)">
               <span>Total Dues:</span>
-              <span className="font-mono text-amber-400">{formatINR(totalDue)}</span>
+              <span className="font-mono text-(--accent)">{formatINR(totalDue)}</span>
             </div>
           </div>
 
-          {/* Amount & Mode */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="input-label mb-0" htmlFor="amount">
-                  Payment Amount (₹) *
-                </label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="amount">Amount Paying *</Label>
                 <button
                   type="button"
                   onClick={() => setAmountPaid(Math.ceil(totalDue))}
-                  className="text-[10px] text-amber-400 font-semibold hover:underline cursor-pointer"
+                  className="text-[10px] text-(--accent) font-semibold hover:underline cursor-pointer"
                 >
                   Pay Full (₹{Math.ceil(totalDue)})
                 </button>
               </div>
-              <input
+              <Input
                 id="amount"
                 type="number"
-                step="0.01"
-                min="1"
+                step="any"
+                min="0.01"
                 value={amountPaid}
                 onChange={(e) => setAmountPaid(Number(e.target.value))}
-                className="input-field font-mono text-lg font-bold text-emerald-400 py-2.5"
+                className="font-mono text-lg font-bold text-(--accent) py-2.5 h-11"
                 required
               />
             </div>
 
-            <div>
-              <label className="input-label">Payment Mode *</label>
+            <div className="space-y-1.5">
+              <Label>Payment Mode *</Label>
               <select
                 value={mode}
                 onChange={(e) =>
                   setMode(e.target.value as "CASH" | "UPI" | "BANK_TRANSFER" | "CARD")
                 }
-                className="input-field bg-zinc-950 text-xs py-3"
+                className="flex h-11 w-full rounded-md border border-input bg-(--bg-input) px-3 py-2 text-xs ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <option value="UPI">UPI / Instant Transfer</option>
-                <option value="CASH">Cash at Counter</option>
-                <option value="BANK_TRANSFER">Bank NEFT / RTGS</option>
-                <option value="CARD">Debit / Credit Card</option>
+                <option value="UPI" className="bg-(--bg-input) text-(--text-primary)">
+                  UPI / Instant Transfer
+                </option>
+                <option value="CASH" className="bg-(--bg-input) text-(--text-primary)">
+                  Cash at Counter
+                </option>
+                <option value="BANK_TRANSFER" className="bg-(--bg-input) text-(--text-primary)">
+                  Bank NEFT / RTGS
+                </option>
+                <option value="CARD" className="bg-(--bg-input) text-(--text-primary)">
+                  Debit / Credit Card
+                </option>
               </select>
             </div>
           </div>
 
-          {/* Waterfall Allocation Preview (§6.4) */}
-          <div className="p-3.5 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800/80 space-y-1.5 text-xs">
-            <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 mb-1">
-              <TrendingDown className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="p-3.5 rounded-xl bg-(--bg-tertiary) border border-(--border-primary) space-y-1.5 text-xs">
+            <div className="text-[11px] font-semibold text-(--text-secondary) uppercase tracking-wider flex items-center gap-1.5 mb-1">
+              <TrendingDown className="w-3.5 h-3.5 text-(--accent)" />
               Atomic Waterfall Allocation Preview (§6.4)
             </div>
             <div className="grid grid-cols-3 gap-2 pt-1 text-center font-mono">
-              <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[10px] text-zinc-500 font-sans">1. Charges</div>
-                <div className="font-semibold text-zinc-200">{formatINR(preview.allocCharges)}</div>
+              <div className="p-2 rounded bg-(--bg-card) border border-(--border-primary)">
+                <div className="text-[10px] text-(--text-muted) font-sans">1. Charges</div>
+                <div className="font-semibold text-(--text-primary)">
+                  {formatINR(preview.allocCharges)}
+                </div>
               </div>
-              <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[10px] text-zinc-500 font-sans">2. Interest</div>
-                <div className="font-semibold text-amber-400">{formatINR(preview.allocInterest)}</div>
+              <div className="p-2 rounded bg-(--bg-card) border border-(--border-primary)">
+                <div className="text-[10px] text-(--text-muted) font-sans">2. Interest</div>
+                <div className="font-semibold text-(--accent)">
+                  {formatINR(preview.allocInterest)}
+                </div>
               </div>
-              <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[10px] text-zinc-500 font-sans">3. Principal</div>
-                <div className="font-semibold text-emerald-400">{formatINR(preview.allocPrincipal)}</div>
+              <div className="p-2 rounded bg-(--bg-card) border border-(--border-primary)">
+                <div className="text-[10px] text-(--text-muted) font-sans">3. Principal</div>
+                <div className="font-semibold text-(--accent)">
+                  {formatINR(preview.allocPrincipal)}
+                </div>
               </div>
             </div>
           </div>
 
-          <div>
-            <label className="input-label" htmlFor="notes">
-              Reference / Notes (Optional)
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="notes">Reference / Notes (Optional)</Label>
+            <Input
               id="notes"
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. UPI Ref: 318920481234"
-              className="input-field text-xs py-2"
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-zinc-800">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="btn-secondary text-xs px-4 py-2"
-            >
+          <div className="flex justify-end gap-3 pt-3 border-t border-(--border-primary)">
+            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={loading || amountPaid <= 0}
-              className="btn-primary text-xs px-6 py-2 shadow-lg shadow-emerald-500/10 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 cursor-pointer"
+              className="shadow-lg shadow-emerald-500/10 bg-(--accent) hover:opacity-90 text-(--text-inverse)"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   Processing...
                 </>
               ) : (
                 "Issue Receipt & Settle"
               )}
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -297,22 +299,16 @@ interface CloseLoanProps {
 }
 
 export function CloseLoanButton({ loanId, canClose, reason }: CloseLoanProps) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [closeLoan, { isLoading: loading }] = useCloseLoanMutation();
+  const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleClose = async () => {
-    if (!confirm("Are you sure you want to financially close this loan contract? This confirms all principal and interest dues are settled.")) {
-      return;
-    }
-
-    setLoading(true);
     setError(null);
 
-    const res = await closeLoanAction(loanId);
-    if (!res.success) {
-      setError(res.error || "Failed to close loan");
-      setLoading(false);
+    const res = await closeLoan(loanId);
+    if ("error" in res) {
+      setError((res.error as { message?: string })?.message || "Failed to close loan");
       return;
     }
 
@@ -322,44 +318,77 @@ export function CloseLoanButton({ loanId, canClose, reason }: CloseLoanProps) {
       origin: { y: 0.5 },
       colors: ["#FACC15", "#EAB308", "#10B981"],
     });
-    setLoading(false);
-    router.refresh();
+    setOpen(false);
   };
 
   if (!canClose) {
     return (
-      <button
+      <Button
         disabled
+        variant="secondary"
+        size="sm"
         title={reason || "Settle all dues before closing"}
-        className="btn-secondary text-xs px-3.5 py-2 opacity-50 cursor-not-allowed inline-flex items-center gap-1.5"
+        className="opacity-50 cursor-not-allowed text-xs"
       >
-        <CheckCircle2 className="w-3.5 h-3.5" />
+        <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
         Close Loan Contract
-      </button>
+      </Button>
     );
   }
 
   return (
-    <div>
-      <button
-        onClick={handleClose}
+    <>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => {
+          setOpen(true);
+          setError(null);
+        }}
         disabled={loading}
-        className="btn-secondary text-xs px-4 py-2 border-amber-500/40 text-amber-400 hover:bg-amber-500/10 inline-flex items-center gap-1.5 cursor-pointer"
+        className="border-(--accent-border) text-(--accent) hover:bg-(--accent-bg) text-xs"
       >
         {loading ? (
           <>
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
             Closing...
           </>
         ) : (
           <>
-            <CheckCircle2 className="w-3.5 h-3.5" />
+            <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
             Close Loan Contract
           </>
         )}
-      </button>
+      </Button>
       {error && <div className="text-red-400 text-[11px] mt-1">{error}</div>}
-    </div>
+
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent className="border-(--accent-border)">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-(--accent)">
+              <CheckCircle2 className="w-5 h-5" />
+              <span>Confirm Loan Closure</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to financially close this loan contract? This confirms all
+              principal and interest dues are settled.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setOpen(false)}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              onClick={handleClose}
+              disabled={loading}
+              className="bg-(--accent) hover:opacity-90 text-(--text-inverse) font-bold flex items-center gap-1.5"
+            >
+              {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              Yes, Close Contract
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -370,22 +399,16 @@ interface ReleaseItemsProps {
 }
 
 export function ReleaseItemsButton({ loanId, isClosed, isReleased }: ReleaseItemsProps) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [releaseItems, { isLoading: loading }] = useReleaseItemsMutation();
+  const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleRelease = async () => {
-    if (!confirm("Confirm physical hand-back of all pledged collateral items to the customer?")) {
-      return;
-    }
-
-    setLoading(true);
     setError(null);
 
-    const res = await releaseItemsAction(loanId);
-    if (!res.success) {
-      setError(res.error || "Failed to release items");
-      setLoading(false);
+    const res = await releaseItems(loanId);
+    if ("error" in res) {
+      setError((res.error as { message?: string })?.message || "Failed to release items");
       return;
     }
 
@@ -395,8 +418,7 @@ export function ReleaseItemsButton({ loanId, isClosed, isReleased }: ReleaseItem
       origin: { y: 0.6 },
       colors: ["#34D399", "#10B981", "#059669"],
     });
-    setLoading(false);
-    router.refresh();
+    setOpen(false);
   };
 
   if (isReleased) {
@@ -410,105 +432,131 @@ export function ReleaseItemsButton({ loanId, isClosed, isReleased }: ReleaseItem
 
   if (!isClosed) {
     return (
-      <button
+      <Button
         disabled
+        variant="secondary"
+        size="sm"
         title="Loan must be financially closed before releasing items"
-        className="btn-secondary text-xs px-3.5 py-2 opacity-50 cursor-not-allowed inline-flex items-center gap-1.5"
+        className="opacity-50 cursor-not-allowed text-xs"
       >
-        <Unlock className="w-3.5 h-3.5" />
+        <Unlock className="w-3.5 h-3.5 mr-1.5" />
         Release Collateral Items
-      </button>
+      </Button>
     );
   }
 
   return (
-    <div>
-      <button
-        onClick={handleRelease}
+    <>
+      <Button
+        size="sm"
+        onClick={() => {
+          setOpen(true);
+          setError(null);
+        }}
         disabled={loading}
-        className="btn-primary text-xs px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 inline-flex items-center gap-1.5 shadow-md shadow-emerald-500/10 cursor-pointer"
+        className="bg-(--accent) hover:opacity-90 text-(--text-inverse) shadow-md shadow-emerald-500/10 text-xs"
       >
         {loading ? (
           <>
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
             Releasing...
           </>
         ) : (
           <>
-            <Unlock className="w-3.5 h-3.5" />
+            <Unlock className="w-3.5 h-3.5 mr-1.5" />
             Release Collateral Items
           </>
         )}
-      </button>
+      </Button>
       {error && <div className="text-red-400 text-[11px] mt-1">{error}</div>}
-    </div>
+
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent className="border-(--accent-border)">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-(--accent)">
+              <Unlock className="w-5 h-5" />
+              <span>Confirm Collateral Hand-back</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Confirm physical hand-back of all pledged collateral items to the customer? This marks
+              the collateral as officially returned.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setOpen(false)}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              onClick={handleRelease}
+              disabled={loading}
+              className="bg-(--accent) hover:opacity-90 text-(--text-inverse) font-bold flex items-center gap-1.5"
+            >
+              {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              Confirm Release
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
 export function PawnTicketPrintButton() {
   return (
-    <button
+    <Button
+      variant="secondary"
+      size="sm"
       onClick={() => window.print()}
-      className="btn-secondary text-xs px-3.5 py-2 inline-flex items-center gap-1.5 cursor-pointer"
       title="Print Pawn Ticket / Loan Summary"
+      className="text-xs"
     >
-      <Printer className="w-3.5 h-3.5 text-zinc-400" />
+      <Printer className="w-3.5 h-3.5 text-(--text-secondary) mr-1.5" />
       Print Pawn Ticket
-    </button>
+    </Button>
   );
 }
 
-export function ItemPhotoPreview({ photoUrl, description }: { photoUrl?: string | null; description: string }) {
+export function ItemPhotoPreview({
+  photoUrl,
+  description,
+}: {
+  photoUrl?: string | null;
+  description: string;
+}) {
   const [open, setOpen] = useState(false);
-  if (!photoUrl) return <span className="text-[10px] text-zinc-500 font-mono">No photo</span>;
+  if (!photoUrl) return <span className="text-[10px] text-(--text-muted) font-mono">No photo</span>;
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-all text-xs cursor-pointer font-medium"
-      >
-        <FileText className="w-3.5 h-3.5" />
-        View Photo
-      </button>
-
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn"
-          onClick={() => setOpen(false)}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-(--accent-bg) border border-(--accent-border) text-(--accent) hover:bg-(--accent-bg-hover) transition-all text-xs cursor-pointer font-medium"
         >
-          <div
-            className="relative max-w-2xl w-full bg-zinc-950 border border-amber-500/40 rounded-2xl p-4 shadow-2xl space-y-3"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-              <h3 className="font-bold text-sm text-zinc-100">{description} - Collateral Photo</h3>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="p-1 rounded text-zinc-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="flex justify-center max-h-[70vh] overflow-hidden rounded-xl bg-black">
-              <img src={photoUrl} alt={description} className="object-contain max-h-[70vh] w-auto" />
-            </div>
-            <div className="flex justify-end pt-1">
-              <a
-                href={photoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-secondary text-xs px-3 py-1.5"
-              >
-                Open Full Resolution
-              </a>
-            </div>
-          </div>
+          <FileText className="w-3.5 h-3.5" />
+          View Photo
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl border-(--accent-border) p-4">
+        <DialogHeader>
+          <DialogTitle className="text-sm font-bold text-(--text-primary)">
+            {description} - Collateral Photo
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex justify-center max-h-[70vh] overflow-hidden rounded-xl bg-black">
+          <img src={photoUrl} alt={description} className="object-contain max-h-[70vh] w-auto" />
         </div>
-      )}
-    </>
+        <div className="flex justify-end pt-1">
+          <a
+            href={photoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary text-xs px-3 py-1.5"
+          >
+            Open Full Resolution
+          </a>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
-

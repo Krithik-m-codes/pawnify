@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { debugLog } from "@/lib/debug";
 
 export type SessionUser = {
   id: string;
@@ -58,12 +59,18 @@ export async function checkAuth(): Promise<
 > {
   const session = await getSession();
   if (!session || !session.user) {
+    debugLog("auth", "checkAuth: no session");
     return { authenticated: false, error: "Not authenticated. Please sign in." };
   }
   const user = session.user as unknown as SessionUser;
   if (!user.role || !user.isActive) {
+    debugLog(
+      "auth",
+      `checkAuth: rejected user=${user.id} role=${user.role} isActive=${user.isActive}`
+    );
     return { authenticated: false, error: "Access denied: User account inactive or missing role." };
   }
+  debugLog("auth", `checkAuth: ok user=${user.id} role=${user.role}`);
   return {
     authenticated: true,
     user,
@@ -81,6 +88,7 @@ export async function checkAdmin(): Promise<
   const result = await checkAuth();
   if (!result.authenticated) return result;
   if (result.user.role !== "ADMIN") {
+    debugLog("auth", `checkAdmin: rejected user=${result.user.id} role=${result.user.role}`);
     return { authenticated: false, error: "Access denied: Admin privileges required." };
   }
   return result;

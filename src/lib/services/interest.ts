@@ -13,6 +13,7 @@
 
 import { Prisma } from "@prisma/client";
 import { differenceInCalendarDays } from "date-fns";
+import { debugLog } from "@/lib/debug";
 
 const Decimal = Prisma.Decimal;
 type Decimal = Prisma.Decimal;
@@ -27,15 +28,9 @@ export interface LoanForInterest {
  * Daily interest amount for a given principal and monthly rate.
  * dailyInterest = principalOutstanding × (monthlyRate × 12 / 365 / 100)
  */
-export function computeDailyInterest(
-  principalOutstanding: Decimal,
-  monthlyRate: Decimal
-): Decimal {
+export function computeDailyInterest(principalOutstanding: Decimal, monthlyRate: Decimal): Decimal {
   const annualRate = monthlyRate.times(new Decimal(12));
-  return principalOutstanding
-    .times(annualRate)
-    .div(new Decimal(365))
-    .div(new Decimal(100));
+  return principalOutstanding.times(annualRate).div(new Decimal(365)).div(new Decimal(100));
 }
 
 /**
@@ -56,10 +51,7 @@ export function computeMonthlyInterest(
  * accruedInterest = dailyInterest × days
  * Rounded to 2 decimal places.
  */
-export function computeAccruedInterest(
-  loan: LoanForInterest,
-  asOfDate: Date
-): Decimal {
+export function computeAccruedInterest(loan: LoanForInterest, asOfDate: Date): Decimal {
   const days = differenceInCalendarDays(asOfDate, loan.lastSettledDate);
 
   // No interest if date is same or before lastSettledDate
@@ -67,34 +59,24 @@ export function computeAccruedInterest(
     return new Decimal(0);
   }
 
-  const dailyInterest = computeDailyInterest(
-    loan.principalOutstanding,
-    loan.interestRateMonthly
-  );
+  const dailyInterest = computeDailyInterest(loan.principalOutstanding, loan.interestRateMonthly);
 
-  return dailyInterest.times(new Decimal(days)).toDecimalPlaces(2);
+  const accrued = dailyInterest.times(new Decimal(days)).toDecimalPlaces(2);
+  debugLog(
+    "interest",
+    `accrued=${accrued.toString()} principal=${loan.principalOutstanding.toString()} rate=${loan.interestRateMonthly.toString()}%/mo days=${days}`
+  );
+  return accrued;
 }
 
 /**
  * Compute a summary of interest for display on loan detail.
  */
-export function computeInterestSummary(
-  loan: LoanForInterest,
-  asOfDate: Date = new Date()
-) {
+export function computeInterestSummary(loan: LoanForInterest, asOfDate: Date = new Date()) {
   const accrued = computeAccruedInterest(loan, asOfDate);
-  const daily = computeDailyInterest(
-    loan.principalOutstanding,
-    loan.interestRateMonthly
-  );
-  const monthly = computeMonthlyInterest(
-    loan.principalOutstanding,
-    loan.interestRateMonthly
-  );
-  const daysSinceSettled = differenceInCalendarDays(
-    asOfDate,
-    loan.lastSettledDate
-  );
+  const daily = computeDailyInterest(loan.principalOutstanding, loan.interestRateMonthly);
+  const monthly = computeMonthlyInterest(loan.principalOutstanding, loan.interestRateMonthly);
+  const daysSinceSettled = differenceInCalendarDays(asOfDate, loan.lastSettledDate);
 
   return {
     accruedInterest: accrued,

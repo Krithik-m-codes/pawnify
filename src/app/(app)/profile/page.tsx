@@ -11,6 +11,7 @@ export default async function ProfilePage() {
     name: string;
     email: string;
     role: string;
+    image?: string;
   };
 
   return (
@@ -22,8 +23,8 @@ export default async function ProfilePage() {
 
       <Suspense
         fallback={
-          <div className="p-12 text-center text-zinc-500">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-emerald-500" />
+          <div className="p-12 text-center text-(--text-muted)">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-(--accent)" />
           </div>
         }
       >

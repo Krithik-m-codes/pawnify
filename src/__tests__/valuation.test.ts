@@ -11,10 +11,7 @@ import { Prisma } from "@prisma/client";
 
 describe("Collateral Valuation & Tiered LTV (§6.1 / §6.2)", () => {
   it("correctly computes net weight subtracting stone/wax weight", () => {
-    const net = computeNetWeight(
-      new Prisma.Decimal("25.50"),
-      new Prisma.Decimal("2.50")
-    );
+    const net = computeNetWeight(new Prisma.Decimal("25.50"), new Prisma.Decimal("2.50"));
     expect(net.toString()).toBe("23");
   });
 

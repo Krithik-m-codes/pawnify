@@ -7,7 +7,8 @@
  */
 
 import { Prisma, MetalType, PaymentMode, LoanStatus } from "@prisma/client";
-import { prisma } from "@/lib/db";
+import { prisma, runSerializable } from "@/lib/db";
+import { debugLog } from "@/lib/debug";
 import { addMonths } from "date-fns";
 import {
   computeItemValuation,
@@ -52,9 +53,7 @@ export type LoanDisplayStatus = "ACTIVE" | "OVERDUE" | "CLOSED";
 
 // ==================== Loan Number Generation ====================
 
-async function generateLoanNumber(
-  tx: Prisma.TransactionClient
-): Promise<string> {
+async function generateLoanNumber(tx: Prisma.TransactionClient): Promise<string> {
   const year = new Date().getFullYear();
   const count = await tx.loan.count({
     where: {
@@ -92,7 +91,7 @@ export function deriveLoanDisplayStatus(loan: {
 export async function createLoan(input: CreateLoanInput) {
   const loanDate = input.loanDate || new Date();
 
-  return await prisma.$transaction(async (tx) => {
+  return await runSerializable(async (tx) => {
     // 1. Recompute all item valuations server-side (Non-Negotiable #5)
     const computedItems = input.items.map((item) => {
       const valuation = computeItemValuation({
@@ -194,6 +193,11 @@ export async function createLoan(input: CreateLoanInput) {
       },
     });
 
+    debugLog(
+      "loans",
+      `createLoan: ${loanNumber} principal=${principalAmount.toString()} ltv=${ltvPercent.toString()}%`
+    );
+
     return loan;
   });
 }
@@ -265,7 +269,6 @@ export interface LoanFilters {
 
 export async function getLoans(filters: LoanFilters = {}) {
   const { page = 1, pageSize = 20 } = filters;
-  const skip = (page - 1) * pageSize;
 
   const where: Prisma.LoanWhereInput = {};
 
@@ -315,14 +318,46 @@ export async function getLoans(filters: LoanFilters = {}) {
     where.items = { some: { metalType: filters.metalType } };
   }
 
+  const include = {
+    customer: { select: { id: true, fullName: true, phone: true } },
+    handledBy: { select: { id: true, name: true } },
+    items: { select: { metalType: true, packetNumber: true } },
+  } satisfies Prisma.LoanInclude;
+
+  // ACTIVE vs OVERDUE is derived per-row from dueDate + gracePeriodDays (see
+  // deriveLoanDisplayStatus), which Prisma's query builder can't express as a
+  // WHERE clause. DB-level skip/take before that filter would return a
+  // wrong/incomplete page and a total that doesn't match what's displayed, so
+  // for these two statuses we fetch every matching ACTIVE loan and paginate
+  // in memory instead of trusting the DB to do it.
+  if (filters.status === "ACTIVE" || filters.status === "OVERDUE") {
+    const allMatching = await prisma.loan.findMany({
+      where,
+      include,
+      orderBy: { createdAt: "desc" },
+    });
+
+    const filtered = allMatching
+      .map((loan) => ({ ...loan, displayStatus: deriveLoanDisplayStatus(loan) }))
+      .filter((l) => l.displayStatus === filters.status);
+
+    const total = filtered.length;
+    const skip = (page - 1) * pageSize;
+
+    return {
+      loans: filtered.slice(skip, skip + pageSize),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
+  const skip = (page - 1) * pageSize;
   const [loans, total] = await Promise.all([
     prisma.loan.findMany({
       where,
-      include: {
-        customer: { select: { id: true, fullName: true, phone: true } },
-        handledBy: { select: { id: true, name: true } },
-        items: { select: { metalType: true, packetNumber: true } },
-      },
+      include,
       orderBy: { createdAt: "desc" },
       skip,
       take: pageSize,
@@ -330,20 +365,8 @@ export async function getLoans(filters: LoanFilters = {}) {
     prisma.loan.count({ where }),
   ]);
 
-  // Derive display status and filter for OVERDUE/ACTIVE if needed
-  let enrichedLoans = loans.map((loan) => ({
-    ...loan,
-    displayStatus: deriveLoanDisplayStatus(loan),
-  }));
-
-  if (filters.status === "OVERDUE") {
-    enrichedLoans = enrichedLoans.filter((l) => l.displayStatus === "OVERDUE");
-  } else if (filters.status === "ACTIVE") {
-    enrichedLoans = enrichedLoans.filter((l) => l.displayStatus === "ACTIVE");
-  }
-
   return {
-    loans: enrichedLoans,
+    loans: loans.map((loan) => ({ ...loan, displayStatus: deriveLoanDisplayStatus(loan) })),
     total,
     page,
     pageSize,
@@ -386,9 +409,7 @@ export async function closeLoan(loanId: string, closedById: string) {
     );
     // Principal is 0, so accrued should be 0 — but verify
     if (accrued.gt(new Decimal("0.01"))) {
-      throw new Error(
-        `Cannot close loan: ₹${accrued.toString()} interest still accrued`
-      );
+      throw new Error(`Cannot close loan: ₹${accrued.toString()} interest still accrued`);
     }
 
     const now = new Date();

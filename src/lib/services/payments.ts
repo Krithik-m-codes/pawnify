@@ -14,7 +14,9 @@
  */
 
 import { Prisma, PaymentMode } from "@prisma/client";
-import { prisma } from "@/lib/db";
+import { differenceInCalendarDays } from "date-fns";
+import { prisma, runSerializable } from "@/lib/db";
+import { debugLog } from "@/lib/debug";
 import { computeAccruedInterest } from "./interest";
 
 const Decimal = Prisma.Decimal;
@@ -109,10 +111,7 @@ export async function previewPaymentAllocation(
 
   const remainingPrincipal = loan.principalOutstanding.minus(allocatedPrincipal);
 
-  const totalCharges = loan.charges.reduce(
-    (sum, c) => sum.plus(c.amount),
-    new Decimal(0)
-  );
+  const totalCharges = loan.charges.reduce((sum, c) => sum.plus(c.amount), new Decimal(0));
   const totalDue = totalCharges.plus(accruedInterest).plus(loan.principalOutstanding);
 
   return {
@@ -144,8 +143,9 @@ export async function recordPayment(
     throw new Error("Payment amount must be positive");
   }
 
-  return await prisma.$transaction(async (tx) => {
-    // Lock the loan row for update
+  debugLog("payments", `recordPayment: loan=${loanId} amount=${amount.toString()} mode=${mode}`);
+
+  return await runSerializable(async (tx) => {
     const loan = await tx.loan.findUnique({
       where: { id: loanId },
       include: {
@@ -209,15 +209,29 @@ export async function recordPayment(
     }
 
     // ===== Update loan state =====
-    const newPrincipalOutstanding =
-      loan.principalOutstanding.minus(allocatedPrincipal);
+    const newPrincipalOutstanding = loan.principalOutstanding.minus(allocatedPrincipal);
+
+    // Only advance the interest clock by the fraction of accrued interest that was
+    // actually paid — advancing it fully regardless would silently forgive any
+    // interest left unpaid because charges/allocatedInterest capped the payment.
+    const daysElapsed = differenceInCalendarDays(asOfDate, loan.lastSettledDate);
+    let newLastSettledDate = asOfDate;
+    if (daysElapsed > 0 && accruedInterest.gt(0) && allocatedInterest.lt(accruedInterest)) {
+      const paidDays = allocatedInterest.div(accruedInterest).times(daysElapsed);
+      newLastSettledDate = new Date(
+        loan.lastSettledDate.getTime() + paidDays.toNumber() * 24 * 60 * 60 * 1000
+      );
+      debugLog(
+        "payments",
+        `partial interest payment: accrued=${accruedInterest.toString()} paid=${allocatedInterest.toString()} — advancing clock ${paidDays.toFixed(2)}/${daysElapsed} days instead of full settle`
+      );
+    }
 
     await tx.loan.update({
       where: { id: loanId },
       data: {
         principalOutstanding: newPrincipalOutstanding,
-        // Reset interest clock: we just accounted for interest through this date
-        lastSettledDate: asOfDate,
+        lastSettledDate: newLastSettledDate,
       },
     });
 

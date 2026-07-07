@@ -120,7 +120,9 @@ body {
   font-family: var(--font-sans);
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 ::selection {
@@ -331,7 +333,9 @@ html.dark .badge-rejected {
 .input-field:focus {
   border-color: var(--border-focus);
   background: var(--bg-input-focus);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2), var(--shadow-sm);
+  box-shadow:
+    0 0 0 3px rgba(34, 197, 94, 0.2),
+    var(--shadow-sm);
 }
 
 .input-field::placeholder {
@@ -491,8 +495,14 @@ html.dark .btn-danger:hover {
 /* ==================== Animations ==================== */
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fadeIn {
@@ -500,142 +510,33 @@ html.dark .btn-danger:hover {
 }
 
 @keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .animate-pulse-slow {
   animation: pulse-slow 2s ease-in-out infinite;
 }
 
-/* ==================== Universal Theme Adaptation Rules ==================== */
-/* Maps legacy dark zinc, slate, black, and amber utility classes to hierarchical Green theme variables */
+/* ==================== Dialog Overlays & Modals ==================== */
 
-/* Light Mode Hierarchy: ensure distinct background layers instead of flat white */
-html.light [class*="bg-zinc-950"],
-html.light [class*="bg-slate-950"],
-html.light [class*="bg-black"] {
-  background-color: var(--bg-secondary) !important;
+.modal-backdrop,
+.dialog-overlay {
+  background-color: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 
-html.light [class*="bg-zinc-900"],
-html.light [class*="bg-slate-900"] {
-  background-color: var(--bg-card) !important;
-  box-shadow: var(--shadow-sm);
-}
-
-html.light [class*="bg-zinc-800"],
-html.light [class*="bg-zinc-900/"],
-html.light [class*="bg-zinc-950/"],
-html.light [class*="bg-slate-800"] {
-  background-color: var(--bg-tertiary) !important;
-}
-
-html.light [class*="from-zinc-950"],
-html.light [class*="from-zinc-900"],
-html.light [class*="from-zinc-800"],
-html.light [class*="to-zinc-950"],
-html.light [class*="to-zinc-900"],
-html.light [class*="to-zinc-800"] {
-  background-image: none !important;
-  background-color: var(--bg-card) !important;
-}
-
-html.light [class*="border-zinc-"],
-html.light [class*="border-slate-"],
-html.light [class*="border-white/"],
-html.light [class*="border-black/"] {
-  border-color: var(--border-primary) !important;
-}
-
-html.light [class*="text-zinc-100"],
-html.light [class*="text-zinc-200"],
-html.light [class*="text-zinc-300"],
-html.light [class*="text-white"]:not([class*="bg-"]):not([class*="from-"]) {
-  color: var(--text-primary) !important;
-}
-
-html.light [class*="text-zinc-400"],
-html.light [class*="text-zinc-500"],
-html.light [class*="text-slate-400"],
-html.light [class*="text-slate-500"] {
-  color: var(--text-secondary) !important;
-}
-
-/* Dark mode mapping for legacy classes to ensure rich OLED black and emerald contrast */
-html.dark [class*="bg-zinc-950"],
-html.dark [class*="bg-slate-950"],
-html.dark [class*="bg-black"] {
-  background-color: #09090b !important;
-}
-
-html.dark [class*="bg-zinc-900"],
-html.dark [class*="bg-slate-900"] {
-  background-color: rgba(24, 24, 27, 0.95) !important;
-}
-
-html.dark [class*="bg-zinc-800"],
-html.dark [class*="bg-slate-800"] {
-  background-color: rgba(39, 39, 42, 0.8) !important;
-}
-
-html.dark [class*="from-zinc-950"],
-html.dark [class*="from-zinc-900"],
-html.dark [class*="from-zinc-800"],
-html.dark [class*="to-zinc-950"],
-html.dark [class*="to-zinc-900"],
-html.dark [class*="to-zinc-800"] {
-  background-image: none !important;
-  background-color: rgba(18, 18, 21, 0.9) !important;
-}
-
-html.dark [class*="border-zinc-"],
-html.dark [class*="border-slate-"],
-html.dark [class*="border-white/"] {
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-html.dark [class*="text-zinc-100"],
-html.dark [class*="text-zinc-200"],
-html.dark [class*="text-zinc-300"] {
-  color: var(--text-primary) !important;
-}
-
-html.dark [class*="text-zinc-400"],
-html.dark [class*="text-zinc-500"] {
-  color: var(--text-secondary) !important;
-}
-
-/* Map legacy amber to Lotus Green palette across light and dark modes */
-[class*="text-amber-400"],
-[class*="text-amber-500"],
-[class*="text-amber-300"],
-[class*="text-yellow-400"] {
-  color: var(--accent) !important;
-}
-
-[class*="border-amber-"],
-[class*="border-yellow-"] {
-  border-color: var(--accent-border) !important;
-}
-
-[class*="bg-amber-500/"],
-[class*="from-amber-500/"],
-[class*="to-amber-500/"],
-[class*="bg-yellow-500/"] {
-  background: var(--accent-bg) !important;
-}
-
-[class*="shadow-amber-"],
-[class*="shadow-yellow-"] {
-  box-shadow: 0 4px 12px -2px rgba(34, 197, 94, 0.15) !important;
-}
-
-/* Solid amber button/tab overrides */
-.bg-amber-500,
-.bg-yellow-500 {
-  background-color: var(--accent) !important;
-  color: var(--text-inverse) !important;
+html.dark .modal-backdrop,
+html.dark .dialog-overlay {
+  background-color: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 
 /* ==================== Responsive ==================== */
@@ -645,4 +546,3 @@ html.dark [class*="text-zinc-500"] {
     padding: 1rem;
   }
 }
-

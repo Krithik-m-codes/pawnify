@@ -6,11 +6,7 @@ export const metadata: Metadata = {
   description: "Sign in or register for your Pawnify account to manage gold and silver loans.",
 };
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full min-h-screen" style={{ background: "var(--bg-secondary)" }}>
       {children}

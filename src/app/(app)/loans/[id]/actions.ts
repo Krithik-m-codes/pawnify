@@ -1,10 +1,23 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { checkAuth } from "@/lib/auth/session";
+import { checkAuth, checkAdmin } from "@/lib/auth/session";
 import { recordPayment } from "@/lib/services/payments";
-import { closeLoan, releaseItems } from "@/lib/services/loans";
+import { closeLoan, releaseItems, getLoanById } from "@/lib/services/loans";
 import { paymentSchema } from "@/lib/validation/payment";
+import { serializeForClient } from "@/lib/serialize";
+
+export async function getLoanDetailAction(loanId: string) {
+  const auth = await checkAuth();
+  if (!auth.authenticated) {
+    throw new Error(auth.error);
+  }
+  const loan = await getLoanById(loanId);
+  if (!loan) {
+    throw new Error("Loan not found");
+  }
+  return serializeForClient(loan);
+}
 
 export async function recordPaymentAction(formData: unknown) {
   const auth = await checkAuth();
@@ -100,14 +113,17 @@ export async function updateLoanNotesAction(loanId: string, notes: string) {
     return { success: true };
   } catch (err: unknown) {
     console.error("Update loan notes error:", err);
-    return { success: false, error: err instanceof Error ? err.message : "Failed to update loan notes" };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to update loan notes",
+    };
   }
 }
 
 export async function deleteLoanAction(loanId: string) {
-  const auth = await checkAuth();
-  if (!auth.authenticated || !auth.user) {
-    return { success: false, error: "Unauthorized" };
+  const auth = await checkAdmin();
+  if (!auth.authenticated) {
+    return { success: false, error: auth.error };
   }
 
   try {

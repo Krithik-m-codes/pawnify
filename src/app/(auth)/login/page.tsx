@@ -3,14 +3,11 @@
 import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Lock,
-  Mail,
   ArrowRight,
   ShieldCheck,
   UserCheck,
   AlertCircle,
   Loader2,
-  User,
   Sun,
   Moon,
   TrendingUp,
@@ -26,11 +23,8 @@ function AuthForm() {
   const { theme, toggleTheme } = useTheme();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"STAFF" | "ADMIN">("STAFF");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,48 +37,27 @@ function AuthForm() {
       return;
     }
 
-    if (mode === "signup" && !name.trim()) {
-      setError("Please provide your full name for registration");
-      return;
-    }
-
     try {
       setLoading(true);
 
-      if (mode === "signin") {
-        const { error: authError } = await authClient.signIn.email({
-          email,
-          password,
-          callbackURL: callbackUrl,
-        });
+      const { error: authError } = await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: callbackUrl,
+      });
 
-        if (authError) {
-          setError(authError.message || "Invalid email or password");
-          setLoading(false);
-          return;
-        }
-      } else {
-        const { error: signUpError } = await authClient.signUp.email({
-          email,
-          password,
-          name: name.trim(),
-          role,
-          callbackURL: callbackUrl,
-        } as Parameters<typeof authClient.signUp.email>[0]);
-
-        if (signUpError) {
-          setError(signUpError.message || "Failed to register account");
-          setLoading(false);
-          return;
-        }
-
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.6 },
-          colors: ["#22c55e", "#16a34a", "#4ade80"],
-        });
+      if (authError) {
+        setError(authError.message || "Invalid email or password");
+        setLoading(false);
+        return;
       }
+
+      confetti({
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: ["#22c55e", "#16a34a", "#4ade80"],
+      });
 
       router.push(callbackUrl);
       router.refresh();
@@ -96,14 +69,16 @@ function AuthForm() {
   };
 
   const fillDemo = (demoEmail: string) => {
-    setMode("signin");
     setEmail(demoEmail);
     setPassword("password123");
     setError(null);
   };
 
   return (
-    <div className="min-h-screen w-full flex relative overflow-hidden font-sans" style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}>
+    <div
+      className="min-h-screen w-full flex relative overflow-hidden font-sans"
+      style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}
+    >
       {/* Subtle Theme Toggle */}
       <button
         onClick={toggleTheme}
@@ -115,7 +90,11 @@ function AuthForm() {
         }}
         aria-label="Toggle theme"
       >
-        {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4 text-amber-400" />}
+        {theme === "light" ? (
+          <Moon className="w-4 h-4" />
+        ) : (
+          <Sun className="w-4 h-4 text-(--accent)" />
+        )}
       </button>
 
       {/* LEFT PANEL — Minimalist Institutional Canvas */}
@@ -123,16 +102,14 @@ function AuthForm() {
         {/* Subtle Ambient Glow */}
         <div className="absolute -top-32 -left-32 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 right-10 w-96 h-96 bg-green-500/10 rounded-full blur-3xl pointer-events-none" />
-        
+
         {/* Sleek Minimalist Grid */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#22c55e08_1px,transparent_1px),linear-gradient(to_bottom,#22c55e08_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
 
         {/* Brand Header */}
         <div className="relative z-10 flex items-center gap-3">
           <img src="/icon.png" alt="Pawnify" className="w-9 h-9 object-contain" />
-          <span className="text-2xl font-black tracking-tight text-white font-sans">
-            PAWNIFY
-          </span>
+          <span className="text-2xl font-black tracking-tight text-white font-sans">PAWNIFY</span>
         </div>
 
         {/* Minimalist Editorial Content */}
@@ -142,12 +119,16 @@ function AuthForm() {
             <div className="flex items-center gap-1.5 text-xs font-mono font-medium text-emerald-400">
               <TrendingUp className="w-3.5 h-3.5" />
               <span>GOLD 24K: ₹7,850/g</span>
-              <span className="text-[10px] text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded">+0.4%</span>
+              <span className="text-[10px] text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded">
+                +0.4%
+              </span>
             </div>
             <div className="w-[1px] h-3 bg-white/10" />
             <div className="flex items-center gap-1.5 text-xs font-mono font-medium text-zinc-300">
               <span>SILVER: ₹92/g</span>
-              <span className="text-[10px] text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded">+1.2%</span>
+              <span className="text-[10px] text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded">
+                +1.2%
+              </span>
             </div>
           </div>
 
@@ -155,7 +136,8 @@ function AuthForm() {
             The operational standard for asset lending.
           </h1>
           <p className="text-zinc-400 text-base leading-relaxed font-normal">
-            Built for institutional pawnbrokers. Seamlessly calculate LTV margins, verify Aadhaar identities, and issue automated loan agreements in seconds.
+            Built for institutional pawnbrokers. Seamlessly calculate LTV margins, verify Aadhaar
+            identities, and issue automated loan agreements in seconds.
           </p>
 
           <div className="pt-2 flex items-center gap-6 text-xs text-zinc-400 font-medium">
@@ -188,7 +170,10 @@ function AuthForm() {
         {/* Mobile Brand Header */}
         <div className="flex items-center gap-2.5 mb-8 lg:hidden">
           <img src="/icon.png" alt="Pawnify" className="w-9 h-9 object-contain" />
-          <span className="font-black text-2xl tracking-tight font-sans" style={{ color: "var(--text-primary)" }}>
+          <span
+            className="font-black text-2xl tracking-tight font-sans"
+            style={{ color: "var(--text-primary)" }}
+          >
             PAWNIFY
           </span>
         </div>
@@ -203,45 +188,18 @@ function AuthForm() {
         >
           {/* Header */}
           <div className="mb-6">
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>
-              {mode === "signin" ? "Sign in to Pawnify" : "Create your account"}
+            <h2
+              className="text-2xl sm:text-3xl font-extrabold tracking-tight"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Sign in to Pawnify
             </h2>
-            <p className="text-xs sm:text-sm mt-1 font-normal" style={{ color: "var(--text-muted)" }}>
-              {mode === "signin"
-                ? "Enter your email and password to access the platform"
-                : "Register a new institutional staff or admin account"}
+            <p
+              className="text-xs sm:text-sm mt-1 font-normal"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Enter your email and password to access the platform
             </p>
-          </div>
-
-          {/* Clean Segmented Control Tab */}
-          <div
-            className="grid grid-cols-2 p-1 rounded-xl mb-6"
-            style={{ background: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}
-          >
-            <button
-              type="button"
-              onClick={() => { setMode("signin"); setError(null); }}
-              className="py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              style={
-                mode === "signin"
-                  ? { background: "var(--bg-card)", color: "var(--text-primary)", boxShadow: "var(--shadow-sm)" }
-                  : { color: "var(--text-muted)", background: "transparent" }
-              }
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode("signup"); setError(null); }}
-              className="py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              style={
-                mode === "signup"
-                  ? { background: "var(--bg-card)", color: "var(--text-primary)", boxShadow: "var(--shadow-sm)" }
-                  : { color: "var(--text-muted)", background: "transparent" }
-              }
-            >
-              Register Account
-            </button>
           </div>
 
           {/* Error Alert */}
@@ -254,31 +212,12 @@ function AuthForm() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === "signup" && (
-              <div className="animate-fadeIn">
-                <label className="input-label flex items-center gap-1.5 font-medium text-xs mb-1.5" htmlFor="name" style={{ color: "var(--text-secondary)" }}>
-                  Full Name
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Vikram Sharma"
-                  className="input-field w-full px-3.5 py-2.5 rounded-xl text-sm transition-all"
-                  style={{
-                    background: "var(--bg-input)",
-                    border: "1px solid var(--border-primary)",
-                    color: "var(--text-primary)",
-                  }}
-                  disabled={loading}
-                  required={mode === "signup"}
-                />
-              </div>
-            )}
-
             <div>
-              <label className="input-label flex items-center gap-1.5 font-medium text-xs mb-1.5" htmlFor="email" style={{ color: "var(--text-secondary)" }}>
+              <label
+                className="input-label flex items-center gap-1.5 font-medium text-xs mb-1.5"
+                htmlFor="email"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 Email Address
               </label>
               <input
@@ -299,7 +238,11 @@ function AuthForm() {
             </div>
 
             <div>
-              <label className="input-label flex items-center gap-1.5 font-medium text-xs mb-1.5" htmlFor="password" style={{ color: "var(--text-secondary)" }}>
+              <label
+                className="input-label flex items-center gap-1.5 font-medium text-xs mb-1.5"
+                htmlFor="password"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 Password
               </label>
               <input
@@ -320,56 +263,20 @@ function AuthForm() {
               />
             </div>
 
-            {mode === "signup" && (
-              <div className="animate-fadeIn pt-1">
-                <label className="input-label flex items-center gap-1.5 font-medium text-xs mb-1.5" style={{ color: "var(--text-secondary)" }}>
-                  Account Role
-                </label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  <button
-                    type="button"
-                    onClick={() => setRole("STAFF")}
-                    className="p-2.5 rounded-xl text-left flex flex-col gap-0.5 transition-all cursor-pointer"
-                    style={
-                      role === "STAFF"
-                        ? { background: "var(--accent-bg)", border: "1.5px solid var(--accent)", color: "var(--text-primary)" }
-                        : { background: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }
-                    }
-                  >
-                    <span className="font-semibold text-xs">Branch Staff</span>
-                    <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>Loan processing</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole("ADMIN")}
-                    className="p-2.5 rounded-xl text-left flex flex-col gap-0.5 transition-all cursor-pointer"
-                    style={
-                      role === "ADMIN"
-                        ? { background: "var(--accent-bg)", border: "1.5px solid var(--accent)", color: "var(--text-primary)" }
-                        : { background: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }
-                    }
-                  >
-                    <span className="font-semibold text-xs">System Admin</span>
-                    <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>Full permissions</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl font-semibold text-sm text-white shadow-md shadow-emerald-500/10 transition-all duration-200 hover:opacity-90 flex items-center justify-center gap-2 cursor-pointer mt-4"
-              style={{ background: "#16a34a" }}
+              className="w-full py-3 rounded-xl font-semibold text-sm shadow-md transition-all duration-200 hover:opacity-90 flex items-center justify-center gap-2 cursor-pointer mt-4"
+              style={{ background: "var(--accent)", color: "var(--text-inverse)" }}
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {mode === "signin" ? "Signing in..." : "Creating account..."}
+                  Signing in...
                 </>
               ) : (
                 <>
-                  {mode === "signin" ? "Sign In" : "Register Account"}
+                  Sign In
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -377,55 +284,71 @@ function AuthForm() {
           </form>
 
           {/* Demo Credentials Quick-Fill Section */}
-          {mode === "signin" && (
-            <div className="mt-8 pt-5 animate-fadeIn" style={{ borderTop: "1px solid var(--border-primary)" }}>
-              <div className="flex items-center justify-between text-[11px] mb-2.5 font-medium" style={{ color: "var(--text-muted)" }}>
-                <span>Demo Accounts (Click to fill)</span>
-                <span className="text-emerald-500 font-mono">Instant Access</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => fillDemo("admin@pawnify.com")}
-                  className="p-2.5 rounded-xl transition-all text-left flex items-center justify-between group cursor-pointer hover:border-emerald-500/40"
-                  style={{
-                    background: "var(--bg-tertiary)",
-                    border: "1px solid var(--border-primary)",
-                  }}
-                >
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold truncate flex items-center gap-1" style={{ color: "var(--text-primary)" }}>
-                      Admin <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 inline" />
-                    </div>
-                    <div className="text-[10px] font-mono truncate" style={{ color: "var(--text-muted)" }}>
-                      admin@pawnify
-                    </div>
-                  </div>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-500 shrink-0 transition-colors" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => fillDemo("priya@pawnify.com")}
-                  className="p-2.5 rounded-xl transition-all text-left flex items-center justify-between group cursor-pointer hover:border-emerald-500/40"
-                  style={{
-                    background: "var(--bg-tertiary)",
-                    border: "1px solid var(--border-primary)",
-                  }}
-                >
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold truncate flex items-center gap-1" style={{ color: "var(--text-primary)" }}>
-                      Staff <UserCheck className="w-3.5 h-3.5 text-blue-500 inline" />
-                    </div>
-                    <div className="text-[10px] font-mono truncate" style={{ color: "var(--text-muted)" }}>
-                      priya@pawnify
-                    </div>
-                  </div>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-500 shrink-0 transition-colors" />
-                </button>
-              </div>
+          <div
+            className="mt-8 pt-5 animate-fadeIn"
+            style={{ borderTop: "1px solid var(--border-primary)" }}
+          >
+            <div
+              className="flex items-center justify-between text-[11px] mb-2.5 font-medium"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <span>Demo Accounts (Click to fill)</span>
+              <span className="text-emerald-500 font-mono">Instant Access</span>
             </div>
-          )}
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => fillDemo("admin@pawnify.com")}
+                className="p-2.5 rounded-xl transition-all text-left flex items-center justify-between group cursor-pointer hover:border-emerald-500/40"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  border: "1px solid var(--border-primary)",
+                }}
+              >
+                <div className="min-w-0">
+                  <div
+                    className="text-xs font-semibold truncate flex items-center gap-1"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    Admin <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 inline" />
+                  </div>
+                  <div
+                    className="text-[10px] font-mono truncate"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    admin@pawnify
+                  </div>
+                </div>
+                <ArrowUpRight className="w-3.5 h-3.5 text-(--text-muted) group-hover:text-(--accent) shrink-0 transition-colors" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => fillDemo("priya@pawnify.com")}
+                className="p-2.5 rounded-xl transition-all text-left flex items-center justify-between group cursor-pointer hover:border-emerald-500/40"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  border: "1px solid var(--border-primary)",
+                }}
+              >
+                <div className="min-w-0">
+                  <div
+                    className="text-xs font-semibold truncate flex items-center gap-1"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    Staff <UserCheck className="w-3.5 h-3.5 text-blue-500 inline" />
+                  </div>
+                  <div
+                    className="text-[10px] font-mono truncate"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    priya@pawnify
+                  </div>
+                </div>
+                <ArrowUpRight className="w-3.5 h-3.5 text-(--text-muted) group-hover:text-(--accent) shrink-0 transition-colors" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -434,11 +357,16 @@ function AuthForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen w-full flex items-center justify-center" style={{ background: "var(--bg-primary)" }}>
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--accent)" }} />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div
+          className="min-h-screen w-full flex items-center justify-center"
+          style={{ background: "var(--bg-primary)" }}
+        >
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--accent)" }} />
+        </div>
+      }
+    >
       <AuthForm />
     </Suspense>
   );

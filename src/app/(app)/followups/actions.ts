@@ -4,6 +4,71 @@ import { revalidatePath } from "next/cache";
 import { checkAuth } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { FollowUpStatus } from "@prisma/client";
+import { serializeForClient } from "@/lib/serialize";
+
+export async function getFollowUpsAction(tab: string) {
+  const auth = await checkAuth();
+  if (!auth.authenticated) {
+    throw new Error(auth.error);
+  }
+
+  const [followUps, activeLoans] = await Promise.all([
+    prisma.followUp.findMany({
+      where: tab === "DONE" ? { status: "DONE" } : { status: "PENDING" },
+      include: {
+        loan: {
+          select: {
+            id: true,
+            loanNumber: true,
+            principalOutstanding: true,
+            dueDate: true,
+            customer: { select: { fullName: true, phone: true } },
+          },
+        },
+        assignedTo: { select: { name: true } },
+      },
+      orderBy: { dueDate: "asc" },
+    }),
+    prisma.loan.findMany({
+      where: { status: "ACTIVE" },
+      select: {
+        id: true,
+        loanNumber: true,
+        customer: { select: { fullName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
+  const activeLoanOptions = activeLoans.map((l) => ({
+    id: l.id,
+    loanNumber: l.loanNumber,
+    customerName: l.customer.fullName,
+  }));
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const formattedFollowUps = followUps.map((f) => ({
+    id: f.id,
+    dueDate: f.dueDate.toISOString(),
+    loanId: f.loanId,
+    loan: {
+      loanNumber: f.loan.loanNumber,
+      principalOutstanding: f.loan.principalOutstanding.toString(),
+      customer: {
+        fullName: f.loan.customer.fullName,
+        phone: f.loan.customer.phone,
+      },
+    },
+    note: f.note,
+    assignedToName: f.assignedTo?.name || "Unassigned",
+    status: f.status,
+    isOverdueTask: tab === "PENDING" && new Date(f.dueDate) < today,
+  }));
+
+  return serializeForClient({ followUps: formattedFollowUps, activeLoanOptions });
+}
 
 export async function createFollowUpAction(loanId: string, note: string, dueDateStr: string) {
   const auth = await checkAuth();

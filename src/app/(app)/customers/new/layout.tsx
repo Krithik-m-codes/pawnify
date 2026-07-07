@@ -6,10 +6,6 @@ export const metadata: Metadata = {
   description: "Register a new borrower with KYC details and identity verification.",
 };
 
-export default function NewCustomerLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function NewCustomerLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

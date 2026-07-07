@@ -130,10 +130,7 @@ export async function searchCustomers(query: string, limit = 10) {
 
   return await prisma.customer.findMany({
     where: {
-      OR: [
-        { fullName: { contains: query, mode: "insensitive" } },
-        { phone: { contains: query } },
-      ],
+      OR: [{ fullName: { contains: query, mode: "insensitive" } }, { phone: { contains: query } }],
     },
     select: {
       id: true,
@@ -148,11 +145,7 @@ export async function searchCustomers(query: string, limit = 10) {
 
 // ==================== KYC ====================
 
-export async function updateKycStatus(
-  docId: string,
-  status: KycStatus,
-  verifiedById: string
-) {
+export async function updateKycStatus(docId: string, status: KycStatus, verifiedById: string) {
   return await prisma.kycDocument.update({
     where: { id: docId },
     data: {

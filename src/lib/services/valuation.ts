@@ -48,10 +48,7 @@ export interface ItemValuationResult {
  * netWeightGrams = grossWeightGrams − stoneWeightGrams
  * Must be ≥ 0.
  */
-export function computeNetWeight(
-  grossWeight: Decimal,
-  stoneWeight: Decimal
-): Decimal {
+export function computeNetWeight(grossWeight: Decimal, stoneWeight: Decimal): Decimal {
   const net = grossWeight.minus(stoneWeight);
   if (net.isNegative()) {
     throw new Error("Net weight cannot be negative: stone weight exceeds gross weight");
@@ -63,10 +60,7 @@ export function computeNetWeight(
  * fineWeightGrams = netWeightGrams × (purityPercent / 100)
  * Converts actual metal weight to pure-metal equivalent.
  */
-export function computeFineWeight(
-  netWeight: Decimal,
-  purityPercent: Decimal
-): Decimal {
+export function computeFineWeight(netWeight: Decimal, purityPercent: Decimal): Decimal {
   return netWeight.times(purityPercent).div(new Decimal(100));
 }
 
@@ -74,19 +68,14 @@ export function computeFineWeight(
  * assessedValue = round(fineWeightGrams × valuationRatePerGram, 2)
  * Rate is always for pure (999) metal.
  */
-export function computeAssessedValue(
-  fineWeight: Decimal,
-  ratePerGram: Decimal
-): Decimal {
+export function computeAssessedValue(fineWeight: Decimal, ratePerGram: Decimal): Decimal {
   return fineWeight.times(ratePerGram).toDecimalPlaces(2);
 }
 
 /**
  * Full item valuation pipeline — recomputes all derived fields server-side.
  */
-export function computeItemValuation(
-  input: ItemValuationInput
-): ItemValuationResult {
+export function computeItemValuation(input: ItemValuationInput): ItemValuationResult {
   const gross = new Decimal(input.grossWeightGrams);
   const stone = new Decimal(input.stoneWeightGrams);
   const purity = new Decimal(input.purityPercent);
@@ -157,10 +146,7 @@ export async function getLtvSlabs(): Promise<LtvSlab[]> {
 /**
  * Determine the applicable LTV percentage for a given total assessed value.
  */
-export function getLtvPercent(
-  totalAssessedValue: Decimal,
-  slabs: LtvSlab[]
-): Decimal {
+export function getLtvPercent(totalAssessedValue: Decimal, slabs: LtvSlab[]): Decimal {
   for (const slab of slabs) {
     if (totalAssessedValue.lte(slab.maxValue)) {
       return slab.ltvPercent;
@@ -173,12 +159,6 @@ export function getLtvPercent(
 /**
  * eligibleLoanAmount = totalAssessedValue × (ltvPercent / 100)
  */
-export function computeEligibleAmount(
-  totalAssessedValue: Decimal,
-  ltvPercent: Decimal
-): Decimal {
-  return totalAssessedValue
-    .times(ltvPercent)
-    .div(new Decimal(100))
-    .toDecimalPlaces(2);
+export function computeEligibleAmount(totalAssessedValue: Decimal, ltvPercent: Decimal): Decimal {
+  return totalAssessedValue.times(ltvPercent).div(new Decimal(100)).toDecimalPlaces(2);
 }
