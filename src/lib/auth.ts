@@ -6,6 +6,11 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  trustedOrigins: [
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    "https://pawnify-three.vercel.app",
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
+  ].filter(Boolean) as string[],
   emailAndPassword: {
     enabled: true,
     // Custom password hashing is handled by Better Auth internally

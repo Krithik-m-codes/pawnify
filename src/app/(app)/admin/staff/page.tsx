@@ -2,7 +2,7 @@ import React from "react";
 import { checkAuth } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/page-header";
-import { AddStaffModal, ToggleUserStatusButton, DeleteStaffUserButton } from "./staff-client";
+import { AddStaffModal, ToggleUserStatusButton, DeleteStaffUserButton, StaffActionsMenu } from "./staff-client";
 import { ShieldCheck, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { redirect } from "next/navigation";
 
@@ -121,18 +121,10 @@ export default async function StaffManagementPage() {
                       </div>
                     </td>
                     <td className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <ToggleUserStatusButton
-                          userId={u.id}
-                          isActive={u.isActive}
-                          isSelf={isSelf}
-                        />
-                        <DeleteStaffUserButton
-                          userId={u.id}
-                          isSelf={isSelf}
-                          userName={u.name}
-                        />
-                      </div>
+                      <StaffActionsMenu
+                        user={u}
+                        isSelf={isSelf}
+                      />
                     </td>
                   </tr>
                 );

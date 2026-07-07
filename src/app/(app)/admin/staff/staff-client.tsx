@@ -16,6 +16,7 @@ import {
   User,
   Edit2,
   Trash2,
+  MoreVertical,
 } from "lucide-react";
 
 export function AddStaffModal() {
@@ -440,3 +441,256 @@ export function DeleteStaffUserButton({
     </button>
   );
 }
+
+export function StaffActionsMenu({
+  user,
+  isSelf,
+}: {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+  };
+  isSelf: boolean;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+
+  return (
+    <div className="relative inline-flex items-center gap-1.5 justify-end">
+      {/* Quick Edit Button */}
+      <button
+        type="button"
+        onClick={() => setEditOpen(true)}
+        className="btn-secondary text-xs px-2.5 py-1.5 inline-flex items-center gap-1 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer"
+        title="Edit Staff Details & Role"
+      >
+        <Edit2 className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">Edit</span>
+      </button>
+
+      {/* 3-Dot Dropdown Trigger */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-amber-400 hover:border-amber-500/40 transition-colors cursor-pointer"
+          title="More Access Options"
+        >
+          <MoreVertical className="w-4 h-4" />
+        </button>
+
+        {menuOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setMenuOpen(false)}
+            />
+            <div className="absolute right-0 mt-1.5 w-48 rounded-xl bg-zinc-950 border border-zinc-800 shadow-2xl py-1.5 z-50 text-left animate-fadeIn">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setEditOpen(true);
+                }}
+                className="w-full px-3.5 py-2 text-xs text-zinc-200 hover:bg-zinc-900 hover:text-emerald-400 flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Edit2 className="w-3.5 h-3.5 text-emerald-400" />
+                Edit Role & Info
+              </button>
+
+              <div className="my-1 border-t border-zinc-800/80" />
+
+              <div className="px-3.5 py-1.5 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-400">Status:</span>
+                <ToggleUserStatusButton
+                  userId={user.id}
+                  isActive={user.isActive}
+                  isSelf={isSelf}
+                />
+              </div>
+
+              {!isSelf && (
+                <>
+                  <div className="my-1 border-t border-zinc-800/80" />
+                  <div className="px-3.5 py-1.5 flex items-center justify-between">
+                    <span className="text-[11px] text-red-400 font-medium">Delete:</span>
+                    <DeleteStaffUserButton
+                      userId={user.id}
+                      isSelf={isSelf}
+                      userName={user.name}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Embedded Edit Modal */}
+      {editOpen && (
+        <EditModalContent user={user} isSelf={isSelf} onClose={() => setEditOpen(false)} />
+      )}
+    </div>
+  );
+}
+
+function EditModalContent({
+  user,
+  isSelf,
+  onClose,
+}: {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+  };
+  isSelf: boolean;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
+  const [role, setRole] = useState<"ADMIN" | "STAFF">(user.role as "ADMIN" | "STAFF");
+  const [isActive, setIsActive] = useState(user.isActive);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const res = await updateStaffUserAction(user.id, { name, email, role, isActive });
+    setLoading(false);
+    if (!res.success) {
+      setError(res.error || "Failed to update staff user");
+    } else {
+      onClose();
+      router.refresh();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/45 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
+      <div className="glass-card w-full max-w-md p-6 space-y-5 bg-zinc-950 border-emerald-500/30 text-left shadow-2xl">
+        <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+          <div className="flex items-center gap-2">
+            <Edit2 className="w-4 h-4 text-emerald-400" />
+            <h2 className="text-base font-bold text-zinc-100">
+              Edit Staff Account & Permissions
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded text-zinc-400 hover:text-zinc-100 cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {error && (
+          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <div>
+            <label className="input-label flex items-center gap-1.5" htmlFor="modal-name">
+              <User className="w-3.5 h-3.5 text-zinc-400" />
+              Full Name *
+            </label>
+            <input
+              id="modal-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="input-field py-2.5"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="input-label flex items-center gap-1.5" htmlFor="modal-email">
+              <Mail className="w-3.5 h-3.5 text-zinc-400" />
+              Work Email Address *
+            </label>
+            <input
+              id="modal-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="input-field font-mono py-2.5"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="input-label">Role Assignment *</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as "ADMIN" | "STAFF")}
+              disabled={isSelf}
+              className="input-field bg-zinc-950 py-2.5 disabled:opacity-50"
+            >
+              <option value="STAFF">STAFF — Can register customers & disburse loans</option>
+              <option value="ADMIN">ADMIN — Full system access & staff management</option>
+            </select>
+            {isSelf && (
+              <p className="text-[10px] text-amber-400/80 mt-1">
+                You cannot demote your own active admin account.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="input-label">Account Status</label>
+            <select
+              value={isActive ? "active" : "inactive"}
+              onChange={(e) => setIsActive(e.target.value === "active")}
+              disabled={isSelf}
+              className="input-field bg-zinc-950 py-2.5 disabled:opacity-50"
+            >
+              <option value="active">Active — Account can log in and process transactions</option>
+              <option value="inactive">Inactive — Account is locked and cannot log in</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn-secondary px-4 py-2 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary px-5 py-2 cursor-pointer flex items-center gap-1.5"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+

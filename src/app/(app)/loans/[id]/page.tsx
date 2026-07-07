@@ -8,6 +8,7 @@ import {
   CloseLoanButton,
   ReleaseItemsButton,
   PawnTicketPrintButton,
+  ItemPhotoPreview,
 } from "./loan-actions-client";
 import { LoanCrudButtons } from "./loan-crud-buttons";
 import {
@@ -201,6 +202,7 @@ export default async function LoanDetailPage({ params }: PageProps) {
                 <thead>
                   <tr>
                     <th>Item & Tag</th>
+                    <th>Photo</th>
                     <th>Purity</th>
                     <th>Gross / Net / Fine Wt.</th>
                     <th>Rate / g</th>
@@ -219,6 +221,9 @@ export default async function LoanDetailPage({ params }: PageProps) {
                         <div className="font-mono text-xs text-amber-400 mt-0.5">
                           {item.packetNumber}
                         </div>
+                      </td>
+                      <td>
+                        <ItemPhotoPreview photoUrl={item.photoUrl} description={item.description} />
                       </td>
                       <td>
                         <span className="text-xs font-semibold px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300">

@@ -168,35 +168,38 @@ function NavContent({
         )}
       </div>
 
-      {/* Theme Toggle */}
+      {/* Theme Toggle - Animated Segmented Pill Switcher */}
       <div className="pt-3 mb-3" style={{ borderTop: "1px solid var(--border-primary)" }}>
-        <button
+        <div
           onClick={toggleTheme}
-          className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer"
+          className="w-full p-1 rounded-xl flex items-center justify-between cursor-pointer transition-all duration-300 relative select-none shadow-inner"
           style={{
             background: "var(--bg-tertiary)",
-            color: "var(--text-secondary)",
             border: "1px solid var(--border-primary)",
           }}
+          title="Click to switch theme"
         >
-          <span className="flex items-center gap-2">
-            {theme === "light" ? (
-              <Sun className="w-4 h-4" style={{ color: "#f59e0b" }} />
-            ) : (
-              <Moon className="w-4 h-4" style={{ color: "#818cf8" }} />
-            )}
-            {theme === "light" ? "Light Mode" : "Dark Mode"}
-          </span>
-          <span
-            className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"
-            style={{
-              background: "var(--accent-bg)",
-              color: "var(--accent-text)",
-            }}
+          <div
+            className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 z-10 ${
+              theme === "light"
+                ? "bg-white text-zinc-900 shadow-md transform scale-[1.02]"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
           >
-            {theme === "light" ? "☀" : "🌙"}
-          </span>
-        </button>
+            <Sun className={`w-3.5 h-3.5 ${theme === "light" ? "text-amber-500" : ""}`} />
+            <span>Light</span>
+          </div>
+          <div
+            className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 z-10 ${
+              theme === "dark"
+                ? "bg-zinc-900 text-emerald-400 shadow-md border border-emerald-500/30 transform scale-[1.02]"
+                : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            }`}
+          >
+            <Moon className={`w-3.5 h-3.5 ${theme === "dark" ? "text-emerald-400" : ""}`} />
+            <span>Dark</span>
+          </div>
+        </div>
       </div>
 
       {/* User Profile Footer */}

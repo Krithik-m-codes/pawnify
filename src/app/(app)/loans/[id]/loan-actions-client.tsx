@@ -457,3 +457,58 @@ export function PawnTicketPrintButton() {
     </button>
   );
 }
+
+export function ItemPhotoPreview({ photoUrl, description }: { photoUrl?: string | null; description: string }) {
+  const [open, setOpen] = useState(false);
+  if (!photoUrl) return <span className="text-[10px] text-zinc-500 font-mono">No photo</span>;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-all text-xs cursor-pointer font-medium"
+      >
+        <FileText className="w-3.5 h-3.5" />
+        View Photo
+      </button>
+
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="relative max-w-2xl w-full bg-zinc-950 border border-amber-500/40 rounded-2xl p-4 shadow-2xl space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <h3 className="font-bold text-sm text-zinc-100">{description} - Collateral Photo</h3>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="p-1 rounded text-zinc-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex justify-center max-h-[70vh] overflow-hidden rounded-xl bg-black">
+              <img src={photoUrl} alt={description} className="object-contain max-h-[70vh] w-auto" />
+            </div>
+            <div className="flex justify-end pt-1">
+              <a
+                href={photoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary text-xs px-3 py-1.5"
+              >
+                Open Full Resolution
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+

@@ -40,6 +40,7 @@ interface LoanItemForm {
   valuationRatePerGram: number;
   packetNumber: string;
   storageLocation: string;
+  photoUrl?: string;
 }
 
 function NewLoanForm() {
@@ -532,6 +533,17 @@ function NewLoanForm() {
                         placeholder="Vault A / Rack 1 / Shelf 2"
                         className="input-field text-xs py-2"
                         required
+                      />
+                    </div>
+
+                    <div className="sm:col-span-4 pt-3 border-t border-zinc-800/80">
+                      <DocumentUploader
+                        label={`Upload ${item.metalType === "GOLD" ? "Gold" : "Silver"} Item Photo (${item.description || "Item #" + (idx + 1)})`}
+                        bucket="pawnify-items"
+                        accept=".png,.jpg,.jpeg,.webp"
+                        initialDocs={item.photoUrl ? [{ name: `${item.packetNumber || "item"}_photo`, url: item.photoUrl, uploadedAt: "Current" }] : []}
+                        onUploadComplete={(doc) => handleItemChange(idx, "photoUrl", doc.url)}
+                        onRemove={() => handleItemChange(idx, "photoUrl", "")}
                       />
                     </div>
                   </div>

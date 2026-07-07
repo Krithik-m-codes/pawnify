@@ -509,15 +509,26 @@ html.dark .btn-danger:hover {
 }
 
 /* ==================== Universal Theme Adaptation Rules ==================== */
-/* Maps legacy dark zinc, slate, black, and amber utility classes to dynamic Green theme variables */
+/* Maps legacy dark zinc, slate, black, and amber utility classes to hierarchical Green theme variables */
 
+/* Light Mode Hierarchy: ensure distinct background layers instead of flat white */
 html.light [class*="bg-zinc-950"],
-html.light [class*="bg-zinc-900"],
-html.light [class*="bg-zinc-800"],
-html.light [class*="bg-slate-900"],
 html.light [class*="bg-slate-950"],
 html.light [class*="bg-black"] {
+  background-color: var(--bg-secondary) !important;
+}
+
+html.light [class*="bg-zinc-900"],
+html.light [class*="bg-slate-900"] {
   background-color: var(--bg-card) !important;
+  box-shadow: var(--shadow-sm);
+}
+
+html.light [class*="bg-zinc-800"],
+html.light [class*="bg-zinc-900/"],
+html.light [class*="bg-zinc-950/"],
+html.light [class*="bg-slate-800"] {
+  background-color: var(--bg-tertiary) !important;
 }
 
 html.light [class*="from-zinc-950"],
@@ -540,7 +551,7 @@ html.light [class*="border-black/"] {
 html.light [class*="text-zinc-100"],
 html.light [class*="text-zinc-200"],
 html.light [class*="text-zinc-300"],
-html.light [class*="text-white"]:not(.btn-primary) {
+html.light [class*="text-white"]:not([class*="bg-"]):not([class*="from-"]) {
   color: var(--text-primary) !important;
 }
 
@@ -551,14 +562,21 @@ html.light [class*="text-slate-500"] {
   color: var(--text-secondary) !important;
 }
 
-/* Dark mode mapping for legacy classes to ensure proper OLED black and white */
+/* Dark mode mapping for legacy classes to ensure rich OLED black and emerald contrast */
 html.dark [class*="bg-zinc-950"],
-html.dark [class*="bg-zinc-900"],
-html.dark [class*="bg-zinc-800"],
-html.dark [class*="bg-slate-900"],
 html.dark [class*="bg-slate-950"],
 html.dark [class*="bg-black"] {
-  background-color: var(--bg-card) !important;
+  background-color: #09090b !important;
+}
+
+html.dark [class*="bg-zinc-900"],
+html.dark [class*="bg-slate-900"] {
+  background-color: rgba(24, 24, 27, 0.95) !important;
+}
+
+html.dark [class*="bg-zinc-800"],
+html.dark [class*="bg-slate-800"] {
+  background-color: rgba(39, 39, 42, 0.8) !important;
 }
 
 html.dark [class*="from-zinc-950"],
@@ -568,13 +586,13 @@ html.dark [class*="to-zinc-950"],
 html.dark [class*="to-zinc-900"],
 html.dark [class*="to-zinc-800"] {
   background-image: none !important;
-  background-color: var(--bg-card) !important;
+  background-color: rgba(18, 18, 21, 0.9) !important;
 }
 
 html.dark [class*="border-zinc-"],
 html.dark [class*="border-slate-"],
 html.dark [class*="border-white/"] {
-  border-color: var(--border-primary) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 html.dark [class*="text-zinc-100"],
@@ -610,7 +628,7 @@ html.dark [class*="text-zinc-500"] {
 
 [class*="shadow-amber-"],
 [class*="shadow-yellow-"] {
-  box-shadow: 0 4px 12px -2px var(--accent-border) !important;
+  box-shadow: 0 4px 12px -2px rgba(34, 197, 94, 0.15) !important;
 }
 
 /* Solid amber button/tab overrides */
