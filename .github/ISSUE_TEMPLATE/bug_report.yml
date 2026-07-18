@@ -1,0 +1,61 @@
+name: Bug Report
+description: Report a bug or regression in Pawnify (web or backend)
+title: "[BUG]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue in **Pawnify**! Please verify that this bug reproduces against current `main` before submitting.
+
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: Affected Subsystem
+      description: Which part of the platform is impacted?
+      options:
+        - web (Next.js 16 / UI / Server Actions / better-auth)
+        - backend (NestJS 11 / Cron / Dodo Payments / Market Rates)
+        - database (Prisma Schema / Postgres RLS / Migrations)
+        - both / full-stack
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the bug.
+      placeholder: Describe what happened and what you expected to happen instead...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Exact steps to trigger the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Enter '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs & Error Messages
+      description: Paste stack traces, terminal outputs, or browser console errors here.
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Node / OS / Environment Details
+      description: e.g., Node v20.15, Windows 11 / Ubuntu 24.04, Postgres 16
+    validations:
+      required: true

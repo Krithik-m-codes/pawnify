@@ -1,117 +1,63 @@
-# Pawnify — Indian Gold & Silver Loan Broker Management System
-## Architectural & Engineering Decision Record (ADR)
+# Pawnify — Architecture Overview
 
----
+> This is a human-readable summary. For the exhaustive, source-cited, AI-oriented version — module-by-module breakdown, exact file/line citations, and known drift versus this document — see [`.agents/architecture.md`](.agents/architecture.md) and the rest of [`.agents/`](.agents/).
 
-### Executive Summary
+## What Pawnify is
 
-**Pawnify** is a production-grade, full-stack Gold and Silver loan (Pawn Broker) management platform tailored specifically for the Indian financial market and RBI regulatory frameworks. 
+Pawnify is a worldwide, multi-tenant pawn-loan / collateral lending management platform. Organizations (tenants) run one or more branches, onboard customers, issue loans against physical collateral (precious metals and other asset categories), track repayments through an atomic waterfall allocation, and maintain an immutable financial ledger. It supports configurable currencies, weight units (gram / troy ounce / tola), purity expressions (karat / millesimal fineness / percentage), and day-count conventions, rather than being hardcoded to any single jurisdiction.
 
-Built to satisfy senior engineering evaluation criteria, Pawnify prioritizes **architectural rigor, mathematical precision, atomic transaction safety, and clean domain modeling** over superficial UI shortcuts. Every financial calculation is server-enforced, every ledger modification is ACID-compliant, and all business rules are configurable without code deployments.
+It ships in two modes:
 
----
+- **Self-hosted / open-source** — run your own instance against your own database, free for internal business use (see `LICENSE`).
+- **Cloud SaaS** — a multi-tenant hosted offering with subscription billing (Dodo Payments), operated commercially.
 
-### 1. Technology Stack & Core Design Choices
+## Repository layout
 
-| Layer | Technology | Architectural Rationale |
-| :--- | :--- | :--- |
-| **Framework** | Next.js 16 (App Router) + Node.js | Leverages React Server Components (RSC) for zero-bundle data fetching and Server Actions for secure, type-safe RPC server mutations. |
-| **Database** | PostgreSQL | Relational integrity, row-level locking (`SELECT ... FOR UPDATE` behavior in tx), and native `NUMERIC/DECIMAL` precision required for financial ledgers. |
-| **ORM** | Prisma ORM | Strong TypeScript schema typing, clean migration management, and robust transaction APIs (`prisma.$transaction`). |
-| **Authentication** | Better Auth (w/ Prisma Adapter) | Production-ready, secure session token handling, built-in credential management, and seamless schema extensibility for custom RBAC (`ADMIN` vs `STAFF`). |
-| **Validation** | Zod (v4 compatible) | Shared client/server schema validation ensuring zero malformed payloads enter server actions or database transactions. |
-| **Math Engine** | `Prisma.Decimal` (`decimal.js`) | Prevents IEEE 754 floating-point rounding errors (e.g., `0.1 + 0.2 === 0.30000000000000004`). All monetary amounts and metal weights use exact arbitrary-precision decimal arithmetic. |
-| **Unit Testing** | Vitest | Fast, automated verification of pure financial math, Actual/365 interest rules, and repayment waterfall allocation logic. |
-| **UI Design** | Tailwind CSS + Lucide Icons | Curated ambient gold dark-mode aesthetic with glassmorphism, responsive mobile drawers, and real-time interactive feedback. |
-
----
-
-### 2. Database Schema Design & Domain Modeling (§11)
-
-The database schema (`prisma/schema.prisma`) is designed around relational normalization and comprehensive auditability.
+This is two independently-run projects in one repo, not a monorepo-tooled workspace:
 
 ```
-[user] (Staff/Admin)
-  ├─1:N─> [Customer] (KYC Profiles)
-  │         ├─1:N─> [KycDocument] (Aadhaar, PAN, Voter ID)
-  │         └─1:N─> [Loan] (Pawn Contracts)
-  │                   ├─1:N─> [LoanItem] (Gold/Silver Collateral Details)
-  │                   ├─1:N─> [LoanCharge] (Processing/Late/Valuation Fees)
-  │                   ├─1:N─> [Payment] (Receipts w/ Waterfall Allocations)
-  │                   ├─1:N─> [LedgerEntry] (Immutable Financial Audit Trail)
-  │                   └─1:N─> [FollowUp] (Staff Action Items & Reminders)
-  └─1:N─> [AppSetting] (Dynamic RBI LTV Slabs & Default System Rules)
+pawnify/
+├── backend/     NestJS API — new, partial (auth, cron, customers, health, market-rates, organizations, storage, webhooks)
+├── web/         Next.js 15 App Router application — mature; still owns most business logic
+│                (loans, payments, followups, billing, settings, staff, reports, dashboard)
+├── .agents/     Detailed, source-cited AI-context documentation (start at AGENTS.md)
+└── docker-compose.yml   Self-hosted stack: Postgres + backend + web
 ```
 
-#### Key Schema Decisions:
-1. **`Decimal(12, 2)` & `Decimal(10, 4)` Precision**: Monetary columns (principal, payments, charges) use 2 decimal places (paise precision), while weight columns (gross, stone, net, fine) use 4 decimal places to prevent value leakage on high-purity precious metals.
-2. **Denormalized Snapshots on Contracts**: When a `Loan` is disbursed, we snapshot `ltvPercent`, `interestRateMonthly`, and `totalAssessedValue` onto the contract row. If market gold rates or admin LTV slabs change tomorrow, existing active loans maintain their exact contractual baseline.
-3. **Immutable Ledger Audit Trail**: Every monetary event (disbursal, payment receipt, item release) writes an immutable record to `LedgerEntry` recording the exact transaction type, amount, reference receipt, and resulting principal balance.
-4. **Staff Attribution**: Every action tracks the staff user ID (`CreatedByStaff`, `HandledByStaff`, `CollectedByStaff`, `VerifiedByStaff`), ensuring accountability across branches.
+`backend/` and `web/` each have their own `package.json`, `package-lock.json`, and `.env`. There is currently no shared workspace tool (no Turborepo/Nx/pnpm workspaces) and no CI pipeline — see `.agents/roadmap.md` for the full list of gaps.
 
----
+## Why two projects
 
-### 3. Financial Mathematics & Core Business Rules (§6)
+Pawnify originally ran entirely as a single Next.js application (server actions, Prisma, Supabase — all in what is now `web/`). A standalone NestJS API (`backend/`) is being extracted to eventually own the REST surface and business logic independently of the frontend. That extraction is in progress: `backend/` currently covers auth, health, customers (search only), market rates, organizations (policy/team), storage, cron, and billing webhooks (Dodo Payments). Everything else — loans, payments, followups, billing logic, settings, staff management, reports, the dashboard — still lives in `web/`'s own server actions and service layer. See `.agents/decisions.md` (DEC-006 onward) for the fuller reasoning, and `.agents/backend.md` / `.agents/frontend.md` for what each side actually implements today.
 
-All calculation engines reside in `src/lib/services/` and are strictly server-enforced. Client-side calculators exist purely for UX responsiveness; when a form is submitted, server actions ignore client totals and re-evaluate all formulas from scratch.
+## Core engineering invariants
 
-#### §6.1 Item Valuation Algorithm
-For each pledged collateral item:
-$$\text{Net Weight} = \max(0, \text{Gross Weight} - \text{Stone/Wax Weight})$$
-$$\text{Fine Weight} = \text{Net Weight} \times \left(\frac{\text{Purity \%}}{100}\right)$$
-$$\text{Assessed Value} = \text{round}\left(\text{Fine Weight} \times \text{Valuation Rate Per Gram}, 2\right)$$
+These hold regardless of which side of the split code lives on:
 
-#### §6.2 RBI-Compliant Tiered LTV Framework
-To protect against precious metal price volatility, Loan-to-Value (LTV) limits are tiered based on total portfolio exposure. These limits are dynamically read from `AppSetting` (configurable via `/admin/settings`):
-* **Tier 1 (≤ ₹2,50,000)**: Maximum **85% LTV**
-* **Tier 2 (₹2,50,001 to ₹5,00,000)**: Maximum **80% LTV**
-* **Tier 3 (> ₹5,00,000)**: Maximum **75% LTV**
+1. **Decimal-only money and weight math.** Native JavaScript `Number`/floats are never used for principal, interest, fees, or precious-metal weights — always `Prisma.Decimal`.
+2. **Atomic repayment waterfall.** A payment allocates to outstanding charges, then accrued interest, then principal, inside a single database transaction. Partial writes are treated as data-integrity incidents.
+3. **Row-Level Security as the tenant boundary.** Every tenant-scoped table carries `organizationId` and is meant to be isolated via Postgres RLS policies (`backend/sql/rls_policies.sql`), keyed off a session variable set per request.
+4. **Immutable ledger.** Every financial event (disbursement, payment, closure, item release) writes an append-only `LedgerEntry` row.
 
-When multiple items are added to a loan, the system sums their assessed values, checks the applicable slab, and enforces:
-$$\text{Max Eligible Disbursal} = \text{Total Assessed Value} \times \left(\frac{\text{LTV Slabs \%}}{100}\right)$$
-Any attempt to disburse a principal exceeding this threshold is blocked at the server action layer.
+**Important:** as of this writing, invariant 3 is documented but not actually wired up at the application layer in several read paths — see `.agents/security.md` and the "Detected Issues Register" in `.agents/roadmap.md` before treating tenant isolation as a solved problem, especially if you're evaluating this for production SaaS use with real customer data.
 
-#### §6.3 On-Read Actual/365 Interest Formula
-Rather than running a daily cron job that updates database balances (which risks race conditions, rounding drift, and timezone failures), Pawnify computes simple interest **dynamically on-read** using the **Actual/365 day-count convention**:
-$$\text{Annual Rate} = \text{Monthly Rate} \times 12$$
-$$\text{Daily Interest} = \text{Principal Outstanding} \times \left(\frac{\text{Annual Rate}}{365 \times 100}\right)$$
-$$\text{Accrued Interest} = \text{round}\left(\text{Daily Interest} \times \text{DaysBetween}(\text{LastSettledDate}, \text{Today}), 2\right)$$
-This ensures 100% mathematical precision regardless of when the customer walks into the branch to settle their account.
+## Tech stack
 
-#### §6.4 Atomic Repayment Waterfall Allocation
-When a customer makes a payment, the amount is allocated sequentially according to standard banking waterfall rules inside an ACID database transaction (`prisma.$transaction`):
-1. **Priority 1 — Unsettled Charges**: Oldest pending fees (processing fees, late penalties, notice charges) are paid off first. When fully covered, their `isSettled` flag is flipped to `true`.
-2. **Priority 2 — Accrued Interest**: Any remaining cash absorbs the simple interest accrued since `lastSettledDate`. The `lastSettledDate` is advanced to the date of payment.
-3. **Priority 3 — Principal Reduction**: Any surplus cash directly reduces `principalOutstanding`.
-4. **Full Settlement**: If `principalOutstanding` reaches exactly `₹0.00`, the loan status automatically transitions to `CLOSED` and collateral items become eligible for physical release.
+| Layer | `backend/` | `web/` |
+| --- | --- | --- |
+| Framework | NestJS 11 | Next.js 15 (App Router) |
+| Database access | Prisma 7 + Supabase client | Prisma 7 (driver adapter) + Supabase client |
+| Auth | JWT guard (validates better-auth/Supabase-issued tokens) | better-auth |
+| Validation | class-validator DTOs | Zod |
+| State/API (frontend) | — | Redux Toolkit Query |
+| Testing | Jest | Vitest |
 
----
+Full inventories, including exact package versions, are in `.agents/backend.md` and `.agents/frontend.md`.
 
-### 4. Regulatory Compliance & Risk Management
+## Where to go next
 
-* **Mandatory PAN Verification**: In compliance with Indian tax regulations, if a customer's cumulative active loan principal exceeds the configurable threshold (default: **₹50,000**), the system blocks new loan creation unless a verified `PAN` card document is attached to their KYC profile.
-* **KYC Status Lifecycle**: Documents uploaded by staff start in `PENDING` state and require explicit review (`VERIFIED` or `REJECTED`) before full branch privileges are granted.
-* **Overdue & Maturity Exposure Tracking**: Loans past their contractual due date plus grace period (default: 7 days) are flagged in red across executive dashboards, automatically generating actionable reminder tasks in the `FollowUp` system.
-
----
-
-### 5. Automated Verification & Testing
-
-To prove the reliability of the core math engine, automated unit tests are implemented using `vitest`:
-* **`src/__tests__/valuation.test.ts`**: Verifies net weight subtraction, purity percentages, pure metal equivalents, and exact boundary enforcement for Tier 1 (85%), Tier 2 (80%), and Tier 3 (75%) LTV slabs.
-* **`src/__tests__/interest.test.ts`**: Verifies exact calendar day differences and Actual/365 simple interest calculations across short-term (e.g., 30 days) and full-year tenures.
-* **`src/__tests__/waterfall.test.ts`**: Verifies multi-stage atomic allocation rules, ensuring fees absorb cash before interest, and interest absorbs cash before principal reduction.
-
-Run the suite anytime using:
-```bash
-npm test
-```
-
----
-
-### 6. Extension Readiness Strategy (Post-Submission)
-
-The architecture is deliberately structured to adapt cleanly to post-submission extension tasks:
-1. **Notification & Alerting Hooks**: Server actions (`recordPayment`, `createLoan`, `closeLoan`) are modularized. Inserting an SMS/WhatsApp event trigger (e.g., via Twilio, MSG91, or AWS SNS) requires adding a single asynchronous event dispatch inside the action success block without touching domain math.
-2. **Multi-Branch & Organization Partitioning**: The `user` model is already linked to all records. Adding multi-branch tenancy simply requires adding a `branchId` column to `user` and filtering `findMany` queries by the staff member's active branch.
-3. **Dynamic Auctions & Foreclosures**: If overdue loans require public auctioning, the existing `LoanStatus` enum can be cleanly extended with `UNDER_AUCTION` and `FORECLOSED`, utilizing `totalAssessedValue` as the baseline reserve price in a new `/auctions` domain module.
+- **New to this repo, human or AI:** start at [`AGENTS.md`](AGENTS.md).
+- **Setting up locally:** [`CONTRIBUTING.md`](CONTRIBUTING.md).
+- **Deploying:** [`.agents/deployment.md`](.agents/deployment.md).
+- **Every business rule the code actually enforces:** [`.agents/business-rules.md`](.agents/business-rules.md).
+- **Known bugs, debt, and the full detected-issues register:** [`.agents/roadmap.md`](.agents/roadmap.md).

@@ -1,0 +1,48 @@
+name: Feature Request
+description: Suggest a new capability or architectural improvement for Pawnify
+title: "[FEATURE]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for Pawnify? Please describe the domain requirement or workflow improvement below.
+
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: Target Subsystem
+      description: Where does this feature belong?
+      options:
+        - web (Frontend UI / Dashboard / Reports / Loan Slabs)
+        - backend (REST API / Cron Automations / Webhooks / Integrations)
+        - database (Schema expansion / RLS policies / Jurisdictions)
+        - documentation / developer experience
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem or operational friction? Please describe.
+      placeholder: A clear description of what the pain point or challenge is...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution & Domain Flow
+      description: Describe your proposed solution and any financial, compliance, or tenant-scoping considerations.
+      placeholder: Describe the exact workflow, calculations, or interface changes you envision...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered other solutions or workarounds?
+    validations:
+      required: false

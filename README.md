@@ -1,122 +1,172 @@
-# Pawnify — Indian Gold & Silver Loan Broker Management System
-**Senior Full-Stack Engineering Deliverable**
+<div align="center">
+
+# 🏛️ PAWNIFY
+### The Open-Source Institutional Collateral & Universal Asset-Backed Lending Platform
+
+[![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1%20%E2%86%92%20MIT-blue.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs)](https://nestjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-PostgreSQL-2D3748?logo=prisma)](https://www.prisma.io/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+Pawnify is a modern, enterprise-grade, multi-tenant software platform for **pawnbrokers, gold loan NBFCs, Lombard lenders, and asset finance institutions**. Run your entire loan book digitally—from KYC onboarding and live collateral appraisal to interest accrual and automated repayment waterfalls.
+
+[Features](#-key-features) • [Universal Collateral](#-universal-multi-asset-support) • [India & Global Ready](#-india-ready--worldwide-jurisdictions) • [Quickstart](#-5-minute-quickstart) • [Architecture](#-system-architecture) • [Contributing](#-contributing)
+
+</div>
 
 ---
 
-### Overview
+## ✨ Why Pawnify?
 
-**Pawnify** is a production-ready, full-stack Gold & Silver loan (Pawn Broker) management platform tailored for the Indian financial market. Built with **Next.js 16 (App Router)**, **Node.js**, **PostgreSQL**, **Prisma ORM**, and **Better Auth**, it models complex financial workflows with mathematical precision, ACID transaction safety, and comprehensive regulatory compliance.
+Legacy pawn and collateral lending software is desktop-locked, opaque, and restricted to rigid single-jurisdiction workflows. **Pawnify** modernizes institutional lending with a transparent open-source foundation, institutional audit trails, and multi-tenant cloud capability:
 
-> **Note for Evaluators**: Please read [ARCHITECTURE.md](file:///e:/projects/pawnify/ARCHITECTURE.md) for a detailed breakdown of our database schema design, decimal arithmetic precision, RBI tiered Loan-to-Value (LTV) rules, on-read Actual/365 interest algorithms, and atomic repayment waterfall allocation rules.
-
----
-
-### Key Features & Capabilities
-
-* **Interactive Evaluator 1-Click Login**: Instant access to pre-seeded Admin and Branch Staff accounts without typing credentials.
-* **Executive KPI Dashboard**: Real-time tracking of Assets Under Management (AUM), daily cash/UPI collections, overdue exposure alerts, and quick actions.
-* **Customer & KYC Management**: Indian mobile number formatting, state dropdowns, multi-document KYC attachments (Aadhaar, PAN, Voter ID) with masking, and interactive 1-click verify/reject workflows.
-* **Regulatory PAN Enforcement**: Automatic blocking of loan disbursals if active exposure exceeds **₹50,000** without a verified PAN card.
-* **Pawn Contract & Collateral Builder**: Multi-item collateral entry (Gold & Silver) with auto-calculation of net weight and pure metal equivalent (e.g., 22K → 91.6%).
-* **RBI-Compliant Tiered LTV Slabs**: Server-enforced disbursal caps based on total assessed valuation (≤ ₹2.5L: 85%, ₹2.5L–₹5L: 80%, > ₹5L: 75%).
-* **Actual/365 Simple Interest Engine**: Zero-drift dynamic interest computation on-read, eliminating background cron job rounding errors.
-* **Atomic Repayment Waterfall**: Sequential settlement of Unsettled Charges → Accrued Interest → Principal inside strict database transactions (`prisma.$transaction`).
-* **Gen-Z Neo-Fintech UI & Typography**: Ultra-modern obsidian dark mode powered by **Poppins** typography, glassmorphism card layouts, vibrant neon gold/emerald/rose badges, and celebratory **confetti micro-animations** upon successful loan closures and repayment settlements.
-* **Interactive Recharts Visualizations**: Dynamic multi-tab graphical dashboard displaying 6-month disbursement vs. collection cashflow trends and real-time Gold vs. Silver collateral portfolio composition.
-* **Staff Action Items & Follow-ups**: Tabbed task tracker for overdue recovery calls and maturity notices with status toggles.
-* **Regulatory Analytics & Reports**: Visual breakdown of LTV exposure tiers, Gold vs Silver collateral distribution, and collections revenue.
-* **Admin Role & Settings Management**: RBAC provisioning for new staff members, account deactivation, and real-time editing of system LTV percentages and interest defaults.
+- 🔒 **Multi-Tenant & Role-Based Security**: Built with organization-isolated PostgreSQL schemas and granular Better-Auth role controls (`OWNER`, `ADMIN`, `BRANCH_MANAGER`, `STAFF`).
+- ⚖️ **Audit-Grade Financial Ledger**: Immutable loan lifecycle tracking with an **atomic repayment waterfall** enforcing the strict priority: *Fees → Accrued Interest → Principal Allocation*.
+- 📈 **Live Valuation & Automated LTV Caps**: Real-time spot valuation per gram for precious metals, plus configurable Loan-to-Value (LTV) limits that protect your institution from downside collateral volatility.
+- 🌍 **Built for Scale**: Deploy free self-hosted via Docker Compose, or operate commercially as a multi-tenant Cloud SaaS platform.
 
 ---
 
-### Quickstart Setup Guide
+## 💎 Universal Multi-Asset Support
 
-#### 1. Prerequisites
-* **Node.js** (v20+ recommended)
-* **PostgreSQL / Supabase** (v14+ database)
+Pawnify is engineered to lend against **any physical asset or institutional collateral**—not just gold. Our built-in Universal Appraisal Registry supports:
 
-#### 2. Installation
-Clone the repository and install dependencies:
-```bash
-git clone <repository-url>
-cd pawnify
-npm install
-```
-
-#### 3. Environment Configuration
-Create a `.env` file in the project root with your database connection string and Better Auth secret:
-```env
-DATABASE_URL="postgresql://user:password@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://user:password@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres"
-BETTER_AUTH_SECRET="a-random-32-character-secret-key-for-production-security-1234567"
-BETTER_AUTH_URL="http://localhost:3000"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-```
-
-#### 4. Database Setup & Seeding
-Push the Prisma schema to your database and run the comprehensive demo data seed script using our helper commands:
-```bash
-# Push database schema & seed demo data in one command
-npm run db:reset
-
-# Or run individually:
-npm run db:push
-npm run db:seed
-```
-*(Note: Seeding automatically creates Admin/Staff accounts, 8 demo customers with verified KYC, 13 active/overdue/closed pawn loans, repayment histories, and default system settings)*
-
-#### 5. Running the Application
-Start the Next.js development server:
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser. You will be redirected to the login page where you can use the **1-click evaluator demo buttons**.
+| Asset Category | Badge | Appraisal Parameters | Default LTV Cap | Typical Collateral Examples |
+| :--- | :--- | :--- | :--- | :--- |
+| **Precious Metals & Bullion** | `BULLION & JEWELRY` | Metal Type, Karat / Fineness, Gross Weight, Stone Deductions | **80%** | Gold Bullion Bars, 22K Bridal Jewelry Suite, Silver Mint Bars |
+| **Horology & Luxury Watches** | `HOROLOGY` | Brand & Manufacture, Reference Number, Serial Number, Box/Papers | **65%** | Rolex Submariner, Audemars Piguet Royal Oak, Patek Philippe Nautilus |
+| **Fine Art & Collectibles** | `FINE ART` | Artist / Maker, Title & Creation Year, Provenance Documentation | **50%** | Authenticated Paintings, Rare Numismatic Coins, Sculptures |
+| **Vehicles & Heavy Equipment** | `TITLED ASSETS` | Make/Model/Year, VIN / Chassis Number, Mileage, Clear Title Status | **55%** | Luxury & Exotic Automobiles, Yachts, Commercial Machinery |
+| **Luxury Designer Goods** | `LUXURY GOODS` | Designer Brand, Date Stamp / Blind Stamp, Condition, Original Packaging | **60%** | Hermès Birkin Handbags, Chanel Classic Flap, Leica Camera Kits |
+| **General Appraised Collateral** | `GENERAL ASSET` | Asset Description, Condition Classification, Secondary Market Liquidity | **50%** | Secured Warehouse Inventory, Musical Instrument Suites, Broadcast Gear |
 
 ---
 
-### Demo Credentials (Pre-Seeded)
+## 🇮🇳 India-Ready & 🌐 Worldwide Jurisdictions
 
-| Role | Email | Password | Privileges |
-| :--- | :--- | :--- | :--- |
-| **Admin** | `admin@pawnify.com` | `password123` | Full system access, staff management, LTV/settings configuration. |
-| **Staff 1** | `staff@pawnify.com` | `password123` | Can register customers, disburse loans, record payments, verify KYC. |
-| **Staff 2** | `priya@pawnify.com` | `password123` | Branch staff user for multi-user activity testing. |
+Pawnify comes out-of-the-box with customized institutional lending presets for Indian pawn brokers & Gold Loan NBFCs, while supporting over 12 global financial jurisdictions:
+
+### India-First Compliance (`IN` Profile)
+- **KYC & Identity Verification**: Integrated verification fields for **PAN Card**, **Aadhaar Card**, Voter ID, and Passport.
+- **RBI Gold Loan LTV Alignment**: Ready for RBI-regulated LTV capping slabs (up to 75% / 80% / 85%) and PAN statutory reporting thresholds.
+- **Localized Financial Currency**: Native ₹ INR formatting, Indian mobile number validation, and daily/monthly simple interest accrual.
+
+### Worldwide Jurisdiction Presets
+Switch instantly between **12+ global lending presets** tailored to local legal statutes and day-count conventions:
+- **United States (`US`)**: Conforms to State Pawnbroker Statutes & UCC Article 9 secured lending rules (`ACTUAL_360`, USD `$`).
+- **United Kingdom (`GB`)**: Compliant with FCA Consumer Credit Act & National Pawnbrokers Association guidelines (`ACTUAL_365`, GBP `£`).
+- **European Union (`EU`)**: Tailored for European *Pfandhaus*, Lombard lending, and asset finance (`ACTUAL_360`, EUR `€`).
+- **UAE / Dubai (`AE`)**: Designed for Gold Souk bullion lenders and DIFC horology financiers (`ACTUAL_360`, AED `د.إ`).
+- **Singapore (`SG`), Switzerland (`CH`), Australia (`AU`), Canada (`CA`), Japan (`JP`), Saudi Arabia (`SA`)**, and custom locales.
 
 ---
 
-### Running Automated Verification Tests
+## 🏗️ System Architecture
 
-Pawnify includes a fast automated unit test suite (`vitest`) verifying our core financial algorithms, LTV boundary checks, Actual/365 interest math, and repayment waterfall allocation logic:
-```bash
-npm test
-```
-
----
-
-### Project Structure & Code Navigation
+Pawnify follows a **modern full-stack monorepo** pattern designed for progressive enhancement and scale:
 
 ```
 pawnify/
-├── prisma/
-│   ├── schema.prisma       # PostgreSQL relational schema & Better Auth tables
-│   └── seed.ts             # Comprehensive demo data generator (§11)
-├── src/
-│   ├── __tests__/          # Vitest automated unit test suites
-│   ├── app/
-│   │   ├── (auth)/login/   # Glassmorphic login page w/ 1-click evaluator fill buttons
-│   │   ├── (app)/          # Protected app layout w/ responsive sidebar drawer
-│   │   │   ├── dashboard/  # Executive KPI dashboard w/ overdue attention table
-│   │   │   ├── customers/  # Customer catalog, KYC upload & verification workflows
-│   │   │   ├── loans/      # Loan contracts, multi-item builder, repayment waterfall modal
-│   │   │   ├── followups/  # Staff task tracker & reminder schedules
-│   │   │   ├── reports/    # RBI LTV exposure tiers & collateral composition analytics
-│   │   │   └── admin/      # RBAC staff management & system LTV parameter editing
-│   │   └── api/            # Server endpoints (typeahead customer search, system health)
-│   ├── components/         # Reusable UI components (Sidebar, PageHeader, Modals)
-│   └── lib/
-│       ├── auth/           # Better Auth server configuration & session verification
-│       ├── services/       # Core business engines (Valuation, Interest, Payments, Loans)
-│       └── validation/     # Zod shared client/server input validation schemas
-├── ARCHITECTURE.md         # In-depth architectural & financial math ADR
-└── vitest.config.ts        # Unit test framework configuration
+├── web/                   # Mature Next.js 16 App Router (UI, Route Handlers, Server Actions, RTK Query)
+├── backend/               # NestJS 11 API (REST API, Swagger /docs, Cron tasks, Webhooks)
+├── .agents/               # Comprehensive AI & Contributor Context Documentation
+├── .github/               # CI/CD Workflows, PR Checklist & Issue Templates
+├── docker-compose.yml     # One-command full stack Docker deployment
+└── README.md              # Project overview & documentation hub
 ```
+
+For an in-depth breakdown of request flows, Server Action / REST API hybrid dispatching, and Row-Level Security (RLS), see [`ARCHITECTURE.md`](ARCHITECTURE.md) and [`.agents/architecture.md`](.agents/architecture.md).
+
+---
+
+## 🚀 5-Minute Quickstart
+
+### Option 1: Self-Hosted Docker Compose (Recommended)
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/Krithik-m-codes/pawnify.git
+   cd pawnify
+   ```
+
+2. **Configure your environment**:
+   ```bash
+   cp .env.example .env
+   # Open .env and add your PostgreSQL / Supabase connection details and session secrets
+   ```
+
+3. **Launch the stack**:
+   ```bash
+   docker compose up --build
+   ```
+   - **Web Application**: http://localhost:3000
+   - **NestJS API & Swagger Documentation**: http://localhost:3001/docs
+
+---
+
+### Option 2: Local Development Setup
+
+1. **Install dependencies**:
+   ```bash
+   cd backend && npm install && cp .env.example .env
+   cd ../web && npm install && cp .env.example .env
+   ```
+
+2. **Run database migrations**:
+   ```bash
+   cd web && npx prisma db push
+   ```
+
+3. **Start development servers (in separate terminals)**:
+   ```bash
+   # Terminal 1: NestJS API Server
+   cd backend && npm run dev
+
+   # Terminal 2: Next.js Frontend Server
+   cd web && npm run dev
+   ```
+
+---
+
+## 📚 Comprehensive Documentation Suite
+
+Every module, route, business rule, and financial calculation is meticulously documented under [`.agents/`](.agents/):
+
+| Documentation File | Description |
+| :--- | :--- |
+| [`AGENTS.md`](AGENTS.md) | Complete orientation guide for developers and AI coding agents |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | High-level system design, financial math formulas, and security boundaries |
+| [`.agents/architecture.md`](.agents/architecture.md) | Detailed layer architecture, auth flow, and database access patterns |
+| [`.agents/backend.md`](.agents/backend.md) | NestJS API overview: modules, controllers, guards, and DTOs |
+| [`.agents/frontend.md`](.agents/frontend.md) | Next.js app overview: Server Actions, RTK Query, and UI components |
+| [`.agents/database.md`](.agents/database.md) | Complete PostgreSQL schema, ERD, and Row-Level Security policies |
+| [`.agents/business-rules.md`](.agents/business-rules.md) | Exhaustive reference for LTV caps, interest calculation, and waterfalls |
+| [`.agents/security.md`](.agents/security.md) | Authentication best practices, secrets management, and RLS enforcement |
+| [`.agents/deployment.md`](.agents/deployment.md) | Production Docker deployment, reverse proxies, and environment variables |
+
+---
+
+## 🤝 Contributing
+
+We welcome community contributions from developers, pawn broking operators, and financial technologists worldwide!
+
+1. Check out our [`CONTRIBUTING.md`](CONTRIBUTING.md) guide for setup instructions and code style standards.
+2. Review our [Code of Conduct](CODE_OF_CONDUCT.md) and [Security Policy](SECURITY.md).
+3. Open a feature request or bug report using our structured [.github templates](.github/ISSUE_TEMPLATE).
+
+---
+
+## 📄 License
+
+Licensed under the **Business Source License 1.1** ([`LICENSE`](LICENSE)).
+- Free to install, self-host, and modify for your **internal business operations** (running your own pawn shop or lending institution).
+- Converts automatically to the **MIT License** on **July 1, 2029**.
+- Commercial hosted cloud / SaaS offerings require a separate commercial agreement with Licensor.
+
+---
+
+<div align="center">
+Built with ❤️ for Indian Pawn Brokers & Asset Lenders Worldwide.
+</div>

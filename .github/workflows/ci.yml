@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  web-check:
+    name: Frontend (web) Build & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./web
+        run: npm ci
+
+      - name: Run Prisma Generate
+        working-directory: ./web
+        run: npx prisma generate
+
+      - name: Run Linter
+        working-directory: ./web
+        run: npm run lint
+
+      - name: Run Unit Tests
+        working-directory: ./web
+        run: npm test
+
+      - name: Build Application
+        working-directory: ./web
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pawnify_test?schema=public
+          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/pawnify_test?schema=public
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+          BETTER_AUTH_SECRET: dummy_secret_for_ci_builds_only_32_chars
+
+  backend-check:
+    name: Backend API Build & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run Prisma Generate
+        working-directory: ./backend
+        run: npx prisma generate
+
+      - name: Run Linter
+        working-directory: ./backend
+        run: npm run lint
+
+      - name: Build API Service
+        working-directory: ./backend
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pawnify_test?schema=public
+          SUPABASE_URL: https://dummy-project.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: dummy_service_role_key
+          CRON_SECRET: dummy_cron_secret

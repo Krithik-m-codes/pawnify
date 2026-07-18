@@ -1,0 +1,435 @@
+// Pawnify - Universal Institutional Collateral & Asset-Backed Lending Platform
+// Prisma Schema - PostgreSQL Multi-Tenant Architecture
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== ENUMS ====================
+
+enum Role {
+  PLATFORM_OPERATOR
+  OWNER
+  ADMIN
+  BRANCH_MANAGER
+  STAFF
+}
+
+enum MetalType {
+  GOLD
+  SILVER
+}
+
+enum WeightUnit {
+  GRAM
+  TROY_OUNCE
+  TOLA
+}
+
+enum PurityExpression {
+  KARAT
+  MILLESIMAL_FINENESS
+  PERCENTAGE
+}
+
+enum DayCountConvention {
+  ACTUAL_365
+  ACTUAL_360
+  THIRTY_360
+}
+
+enum LoanStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum KycDocType {
+  AADHAAR
+  PAN
+  VOTER_ID
+  PASSPORT
+  DRIVING_LICENSE
+  CUSTOM
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum PaymentMode {
+  CASH
+  UPI
+  BANK_TRANSFER
+  CARD
+}
+
+enum ChargeType {
+  PROCESSING_FEE
+  PENAL_CHARGE
+  OTHER
+}
+
+enum TransactionType {
+  DISBURSEMENT
+  PAYMENT
+  CLOSURE
+  ITEM_RELEASE
+}
+
+enum FollowUpStatus {
+  PENDING
+  DONE
+  CANCELLED
+}
+
+// ==================== TENANCY & CONFIGURATION ====================
+
+model Organization {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  billingPlan   String?        // null for self-hosted; "starter" | "growth" | "enterprise" | "trial" for cloud
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  branches      Branch[]
+  users         user[]
+  customers     Customer[]
+  loans         Loan[]
+  loanItems     LoanItem[]
+  loanCharges   LoanCharge[]
+  payments      Payment[]
+  ledgerEntries LedgerEntry[]
+  followUps     FollowUp[]
+  kycDocuments  KycDocument[]
+  loanPolicy    LoanPolicy?
+  documentTypes DocumentType[]
+}
+
+model Branch {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  address        String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  users          user[]
+  loans          Loan[]
+
+  @@index([organizationId])
+}
+
+model LoanPolicy {
+  id                   String             @id @default(cuid())
+  organizationId       String             @unique
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  currencyCode         String             @default("USD")  // ISO 4217
+  currencySymbol       String             @default("$")
+  weightUnit           WeightUnit         @default(GRAM)
+  purityExpression     PurityExpression   @default(KARAT)
+  dayCountConvention   DayCountConvention @default(ACTUAL_365)
+  gracePeriodDays      Int                @default(7)
+  mandatoryIdThreshold Decimal            @db.Decimal(12, 2) @default(0)  // 0 = disabled
+  mandatoryIdDocTypeId String?
+  ltvTiers             Json               // [{ maxValue: number | null, ltvPercent: number }], ascending
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+}
+
+model DocumentType {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String       // e.g., "Passport", "Aadhaar", "PAN", "SSN", "Driver's License"
+  isPrimaryId    Boolean      @default(false)
+  maskingRule    String?      // e.g., "last4"
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  kycDocuments   KycDocument[]
+
+  @@index([organizationId])
+}
+
+// ==================== BETTER AUTH TABLES ====================
+
+model user {
+  id            String        @id
+  name          String
+  email         String        @unique
+  emailVerified Boolean       @default(false)
+  image         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Domain & Tenant fields
+  role          Role          @default(STAFF)
+  phone         String?
+  isActive      Boolean       @default(true)
+  passwordHash  String?
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  branchId       String?
+  branch         Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  // Relations
+  sessions      session[]
+  accounts      account[]
+
+  customersCreated  Customer[]    @relation("CreatedByStaff")
+  loansHandled      Loan[]        @relation("HandledByStaff")
+  paymentsCollected Payment[]     @relation("CollectedByStaff")
+  followUpsAssigned FollowUp[]    @relation("AssignedStaff")
+  kycVerified       KycDocument[] @relation("VerifiedByStaff")
+
+  @@index([organizationId])
+  @@index([branchId])
+}
+
+model session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+}
+
+// ==================== DOMAIN MODELS ====================
+
+model Customer {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fullName       String
+  phone          String
+  email          String?
+  dob            DateTime?
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  state          String
+  pincode        String
+  photoUrl       String?
+  createdById    String
+  createdBy      user          @relation("CreatedByStaff", fields: [createdById], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  kycDocuments   KycDocument[]
+  loans          Loan[]
+
+  @@unique([organizationId, phone])
+  @@index([organizationId])
+  @@index([fullName])
+}
+
+model KycDocument {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId     String
+  customer       Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  docType        KycDocType    @default(CUSTOM)
+  documentTypeId String?
+  documentType   DocumentType? @relation(fields: [documentTypeId], references: [id], onDelete: SetNull)
+  docNumber      String
+  fileUrl        String?
+  status         KycStatus     @default(PENDING)
+  verifiedById   String?
+  verifiedBy     user?         @relation("VerifiedByStaff", fields: [verifiedById], references: [id])
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId])
+  @@index([customerId])
+}
+
+// ==================== LOANS ====================
+
+model Loan {
+  id                   String        @id @default(cuid())
+  organizationId       String
+  organization         Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branchId             String?
+  branch               Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  loanNumber           String
+  customerId           String
+  customer             Customer      @relation(fields: [customerId], references: [id])
+  handledById          String
+  handledBy            user          @relation("HandledByStaff", fields: [handledById], references: [id])
+
+  loanDate             DateTime      @default(now())
+  dueDate              DateTime
+  tenureMonths         Int
+  interestRateMonthly  Decimal       @db.Decimal(6, 3)
+  ltvPercent           Decimal       @db.Decimal(5, 2)
+  gracePeriodDays      Int           @default(7)
+
+  totalAssessedValue   Decimal       @db.Decimal(12, 2)
+  principalAmount      Decimal       @db.Decimal(12, 2)
+  principalOutstanding Decimal       @db.Decimal(12, 2)
+  lastSettledDate      DateTime      @default(now())
+
+  status               LoanStatus    @default(ACTIVE)
+  closedAt             DateTime?
+  closedById           String?
+  notes                String?
+
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  items                LoanItem[]
+  payments             Payment[]
+  charges              LoanCharge[]
+  transactions         LedgerEntry[]
+  followUps            FollowUp[]
+
+  @@unique([organizationId, loanNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([customerId])
+}
+
+model LoanItem {
+  id                   String       @id @default(cuid())
+  organizationId       String
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  loanId               String
+  loan                 Loan         @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  metalType            MetalType
+  description          String
+  purityLabel          String
+  purityPercent        Decimal      @db.Decimal(5, 2)
+  grossWeightGrams     Decimal      @db.Decimal(10, 4)
+  stoneWeightGrams     Decimal      @db.Decimal(10, 4) @default(0)
+  netWeightGrams       Decimal      @db.Decimal(10, 4)
+  fineWeightGrams      Decimal      @db.Decimal(10, 4)
+  valuationRatePerGram Decimal      @db.Decimal(10, 2)
+  assessedValue        Decimal      @db.Decimal(12, 2)
+
+  packetNumber         String
+  storageLocation      String
+  photoUrl             String?
+  releasedAt           DateTime?
+
+  createdAt            DateTime     @default(now())
+
+  @@unique([organizationId, packetNumber])
+  @@index([organizationId])
+  @@index([loanId])
+}
+
+model LoanCharge {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  loanId         String
+  loan           Loan         @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  chargeType     ChargeType
+  amount         Decimal      @db.Decimal(12, 2)
+  isSettled      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([loanId])
+}
+
+model Payment {
+  id                 String       @id @default(cuid())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  loanId             String
+  loan               Loan         @relation(fields: [loanId], references: [id])
+  receiptNumber      String
+  paymentDate        DateTime     @default(now())
+  amountPaid         Decimal      @db.Decimal(12, 2)
+  mode               PaymentMode
+  allocatedCharges   Decimal      @db.Decimal(12, 2) @default(0)
+  allocatedInterest  Decimal      @db.Decimal(12, 2) @default(0)
+  allocatedPrincipal Decimal      @db.Decimal(12, 2) @default(0)
+  collectedById      String
+  collectedBy        user         @relation("CollectedByStaff", fields: [collectedById], references: [id])
+  notes              String?
+  createdAt          DateTime     @default(now())
+
+  @@unique([organizationId, receiptNumber])
+  @@index([organizationId])
+  @@index([loanId])
+}
+
+model LedgerEntry {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  loanId         String
+  loan           Loan            @relation(fields: [loanId], references: [id])
+  type           TransactionType
+  amount         Decimal         @db.Decimal(12, 2)
+  principalAfter Decimal         @db.Decimal(12, 2)
+  referenceId    String?
+  description    String
+  createdAt      DateTime        @default(now())
+
+  @@index([organizationId, loanId, createdAt])
+}
+
+model FollowUp {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  loanId         String
+  loan           Loan           @relation(fields: [loanId], references: [id])
+  note           String
+  dueDate        DateTime
+  status         FollowUpStatus @default(PENDING)
+  assignedToId   String?
+  assignedTo     user?          @relation("AssignedStaff", fields: [assignedToId], references: [id])
+  createdAt      DateTime       @default(now())
+
+  @@index([organizationId])
+  @@index([loanId])
+}
+
+model AppSetting {
+  key   String @id
+  value String
+}

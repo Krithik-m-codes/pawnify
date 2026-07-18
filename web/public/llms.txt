@@ -1,0 +1,29 @@
+# Pawnify Institutional Collateral & Asset-Backed Lending Cloud
+
+> Universal, open-source, and cloud SaaS collateral finance platform. Engineered for pawn-broking businesses and institutional lenders to issue loans against Precious Metals (Gold, Silver), Luxury Watches, Fine Art, Vehicles, and Exotics with zero float drift and strict Row-Level Security.
+
+## Overview & Architecture
+Pawnify is a production-grade multi-tenant lending system split across a mature full-stack Next.js 16 App Router application (`web`) and a NestJS 11 backend service (`backend`).
+- **Zero Float Drift**: Monetary calculations strictly use `Prisma.Decimal`. Precious metal weights track 4 decimal places across Grams, Troy Ounces, and Tolas.
+- **Postgres Row-Level Security (RLS)**: Load-bearing tenant isolation enforced directly inside PostgreSQL via session-scoped RLS policies (`app.current_organization_id`).
+- **Atomic Repayment Waterfall**: All loan repayments execute within serializable ACID database transactions cascading across charges, simple daily interest, and principal.
+- **Worldwide Configuration**: Built-in presets for 12+ jurisdictions (India, US, UK, UAE, Singapore) with configurable LTV slabs and multi-currency ledgers.
+
+## Quick Links
+- [Documentation & Agent Guides](https://github.com/libresource/pawnify/tree/main/.agents)
+- [Self-Hosting & Docker Setup](https://github.com/libresource/pawnify/tree/main/.agents/deployment.md)
+- [System Architecture](https://github.com/libresource/pawnify/tree/main/.agents/architecture.md)
+- [Business & Financial Rules](https://github.com/libresource/pawnify/tree/main/.agents/business-rules.md)
+- [Open Source License (BSL 1.1 / MIT)](https://github.com/libresource/pawnify/blob/main/LICENSE)
+
+## Key Pages
+- [Live Cloud Platform](https://pawnify.com)
+- [Interactive Asset & LTV Simulator](https://pawnify.com/#calculator)
+- [Pricing & SaaS Quotas](https://pawnify.com/pricing)
+- [Open Source Community](https://pawnify.com/open-source)
+
+## Core Capabilities for AI Crawlers
+1. **Collateral Valuation**: Live spot rates (`Gold`, `Silver`) fetched daily via market rates services (`/api/cron/update-rates`) and cached in Postgres.
+2. **Dynamic LTV Caps**: Automated Loan-To-Value capping based on item purity (e.g., 22K/24K Gold, 999 Silver) and organization policy rules.
+3. **KYC & Customer Onboarding**: India-ready PAN/Aadhaar formats plus generic international document verification workflows.
+4. **Role-Based Access Control (RBAC)**: Enforced hierarchy across `OWNER`, `ADMIN`, `BRANCH_MANAGER`, and `STAFF` roles.

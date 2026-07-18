@@ -1,0 +1,90 @@
+# Self-hosted stack: Postgres + the NestJS API (backend/) + the Next.js app (web/).
+#
+# Supabase itself is NOT run by this file — both subsystems expect a Supabase
+# project (cloud or separately self-hosted) for auth-adjacent storage and the
+# SUPABASE_* keys below. Postgres here is the app's own relational database
+# (Prisma + RLS), configured via DATABASE_URL/DIRECT_URL.
+#
+# Copy .env.example to .env next to this file and fill in the real secrets
+# before running `docker compose up --build`. Any value left at its default
+# below is NOT safe to use outside of local/throwaway testing.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pawnify_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin1234}
+      POSTGRES_DB: ${POSTGRES_DB:-pawnify}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pawnify_pgdata:/var/lib/postgresql/data
+      - ./backend/sql/rls_policies.sql:/docker-entrypoint-initdb.d/01_rls_policies.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-pawnify}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pawnify_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      API_PREFIX: api
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin1234}@db:5432/${POSTGRES_DB:-pawnify}?schema=public
+      SUPABASE_URL: ${SUPABASE_URL:?set SUPABASE_URL in .env}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?set SUPABASE_SERVICE_ROLE_KEY in .env}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      CRON_SECRET: ${CRON_SECRET:?set CRON_SECRET in .env}
+      DODO_PAYMENTS_API_KEY: ${DODO_PAYMENTS_API_KEY:-}
+      DODO_PAYMENTS_WEBHOOK_KEY: ${DODO_PAYMENTS_WEBHOOK_KEY:-}
+      DODO_PAYMENTS_ENVIRONMENT: ${DODO_PAYMENTS_ENVIRONMENT:-test_mode}
+    ports:
+      - "3001:3001"
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        # NEXT_PUBLIC_* values are baked into the client bundle at build time.
+        # If you're deploying anywhere but localhost, these must be the
+        # PUBLIC, browser-reachable URL of the backend/web services, not the
+        # in-network "backend"/"web" hostnames.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3001}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?set NEXT_PUBLIC_SUPABASE_URL in .env}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:?set NEXT_PUBLIC_SUPABASE_ANON_KEY in .env}
+        NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-false}
+    container_name: pawnify_web
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin1234}@db:5432/${POSTGRES_DB:-pawnify}?schema=public
+      DIRECT_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin1234}@db:5432/${POSTGRES_DB:-pawnify}?schema=public
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-false}
+    ports:
+      - "3000:3000"
+
+volumes:
+  pawnify_pgdata:
+    driver: local

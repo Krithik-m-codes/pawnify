@@ -1,0 +1,40 @@
+# Pawnify Institutional Collateral & Asset-Backed Lending Cloud — Full Technical Index
+
+> Pawnify is the universal open-source and cloud SaaS software system for asset-backed lending, pawn-broking operations, and collateral lifecycle management.
+
+## 1. Core Architectural Pillars
+- **Database Engine**: PostgreSQL 16 with Row-Level Security (`sql/rls_policies.sql`).
+- **ORM & Precision**: Prisma v7 (`@prisma/client: ^7.8.0`, `@prisma/adapter-pg`). Every financial balance and weight calculation relies on `Prisma.Decimal` (arbitrary-precision decimal arithmetic) to prevent JavaScript floating-point errors.
+- **Frontend Subsystem (`web/`)**: Next.js 16.2.10 App Router with Turbopack, Tailwind CSS v4, Zod validation, and Redux Toolkit Query (`RTK Query`).
+- **Backend Subsystem (`backend/`)**: NestJS 11 REST API (`/api/*`) handling market rate synchronization, customer search, and webhook verification (`Dodo Payments`).
+- **Authentication**: `better-auth` v1.6.23 session provider backed by Prisma adapter and shared session verification across `web` and `backend`.
+
+## 2. Domain & Lifecycle Workflows
+### A. Customer Onboarding & KYC
+Supports multi-document verification including PAN, Aadhaar, Passport, and corporate identification. Stores KYC verification states (`PENDING`, `VERIFIED`, `REJECTED`) with document storage paths via Supabase Storage.
+
+### B. Collateral Valuation & Spot Rates
+Calculates exact collateral value using the formula:
+`Valuation = Net Weight (Grams) × Purity Percentage × Live Market Spot Rate (per Gram)`
+Maximum eligible loan amount is constrained by the organization's configured Loan-to-Value (LTV) slab:
+`Max Loan = Valuation × LTV Cap Percentage (e.g., 75%)`
+
+### C. Simple Daily Interest Accrual
+Interest accrues on a daily calendar basis using exact date difference:
+`Daily Accrual = Principal × (Annual Interest Rate / 365)`
+Interest calculation uses `differenceInCalendarDays` from `date-fns` ensuring exact calendar day counting.
+
+### D. ACID Repayment Waterfall
+When a customer makes a payment (`CASH`, `BANK_TRANSFER`, `UPI`, `CHEQUE`), funds are distributed strictly in the following priority:
+1. **Outstanding Charges & Penalties**: Late fees, follow-up penalties, and processing dues.
+2. **Accrued Interest**: All unpaid daily interest accrued up to the payment date.
+3. **Principal Reduction**: Remaining amount reduces the outstanding principal balance.
+
+## 3. Deployment & Self-Hosting
+Self-hosters can run Pawnify under our Business Source License 1.1 (converting automatically to MIT open-source on July 1, 2029).
+- Single root Git repository compatible with Vercel (`web/`) and container/Node providers (`backend/`).
+- Standard Postgres connection string with `DATABASE_URL` and `DIRECT_URL` environment variables.
+
+## 4. Contact & Security
+- Project Repository: https://github.com/libresource/pawnify
+- Security Disclosures: security@pawnify.com
